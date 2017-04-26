@@ -35,8 +35,6 @@ This examples demonstrates the most basic usage of ``sprockets.mixins.http``
 
 .. code:: python
 
-   import json
-
    from tornado import gen, web
    from sprockets.mixins import amqp
 
