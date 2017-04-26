@@ -1,0 +1,3 @@
+include requires/installation.txt
+include LICENSE
+include README.rst
