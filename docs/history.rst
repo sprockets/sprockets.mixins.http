@@ -6,4 +6,4 @@ Version History
 - Initial Version
 
 .. _Next Release: https://github.com/sprockets/sprockets.amqp/compare/1.0.0...HEAD
-.. _0.1.0: https://github.com/sprockets/sprockets.amqp/compare/2fc5bad...1.0.0
+.. _1.0.0: https://github.com/sprockets/sprockets.amqp/compare/2fc5bad...1.0.0
