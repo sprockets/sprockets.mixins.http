@@ -26,9 +26,9 @@ def read_requirements(name):
 setuptools.setup(
     name='sprockets.mixins.http',
     version=__version__,
-    description='Mixin for publishing events to RabbitMQ',
+    description='HTTP Client Mixin for Tornado RequestHandlers',
     long_description=open('README.rst').read(),
-    url='https://github.com/sprockets/sprockets.mixins.amqp',
+    url='https://github.com/sprockets/sprockets.mixins.http',
     author='AWeber Communications, Inc.',
     author_email='api@aweber.com',
     license='BSD',
