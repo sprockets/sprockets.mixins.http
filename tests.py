@@ -33,7 +33,7 @@ class TestHandler(web.RequestHandler):
         status_code = self.status_code()
         if status_code == 429:
             self.add_header('Retry-After', '1')
-            self.set_status(429)
+            self.set_status(429, 'Rate Limited')
             self.finish()
         elif status_code in {502, 504}:
             self.set_status(status_code)
