@@ -16,7 +16,13 @@ try:
 except ImportError:  # pragma: nocover
     logging.getLogger().error('Could not load ietfparse modules')
     algorithms, datastructures, errors = None, None, None
-    headers = lambda x: x
+
+    class headers(object):
+        """Dummy class for installation"""
+        @staticmethod
+        def parse_content_type(value):
+            """Dummy method"""
+            return value
 
 try:
     from tornado import gen, httpclient
