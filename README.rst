@@ -14,7 +14,7 @@ and can be installed via ``pip`` or ``easy_install``:
 
    pip install sprockets.mixins.http
 
-If you would like to use :class:`~tornado.curl_httpclient.CurlAsyncHTTPClient`,
+If you would like to use `tornado.curl_httpclient.CurlAsyncHTTPClient`,
 you can install `pycurl <http://pycurl.io>`_ with:
 
 .. code-block:: bash
@@ -23,7 +23,7 @@ you can install `pycurl <http://pycurl.io>`_ with:
 
 Documentation
 -------------
-https://pythonhosted.org/sprockets.mixins.http
+http://pythonhosted.org/sprockets.mixins.http/
 
 Requirements
 ------------
@@ -98,4 +98,4 @@ License
    :target: https://codecov.io/github/sprockets/sprockets.mixins.http?branch=master
 
 .. |Docs| image:: https://img.shields.io/badge/docs-pythonhosted-green.svg
-   :target: https://pythonhosted.com/sprockets.mixins.http
+   :target: http://pythonhosted.org/sprockets.mixins.http/

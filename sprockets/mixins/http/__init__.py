@@ -36,7 +36,7 @@ except ImportError:  # pragma: nocover
     logging.getLogger().error('Could not load umsgpack module')
     umsgpack = None
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 LOGGER = logging.getLogger(__name__)
 
