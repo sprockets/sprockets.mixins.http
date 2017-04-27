@@ -185,7 +185,8 @@ class HTTPClientMixin(object):
 
         :param dict request_headers: The HTTP request headers
         :param content_type: The mime-type used in the request/response
-        :type content_type: :cls:`ietfparse.datastructures.ContentType` or str
+        :type content_type: :class:`ietfparse.datastructures.ContentType`
+            or str
         :param mixed body: The request body
         :rtype: dict
 
