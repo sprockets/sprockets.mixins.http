@@ -47,6 +47,10 @@ setuptools.setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     packages=setuptools.find_packages(),
+    package_data={'': ['LICENSE', 'README.rst', 'requires/installation.txt']},
+    include_package_data=True,
     namespace_packages=['sprockets', 'sprockets.mixins'],
     install_requires=read_requirements('installation.txt'),
+    extras_require={'curl': ['pycurl']},
+    tests_require=read_requirements('testing.txt'),
     zip_safe=True)
