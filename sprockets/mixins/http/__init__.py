@@ -36,7 +36,7 @@ except ImportError:  # pragma: nocover
     logging.getLogger().error('Could not load umsgpack module')
     umsgpack = None
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -44,29 +44,23 @@ CONTENT_TYPE_JSON = headers.parse_content_type('application/json')
 CONTENT_TYPE_MSGPACK = headers.parse_content_type('application/msgpack')
 DEFAULT_USER_AGENT = 'sprockets.mixins.http/{}'.format(__version__)
 
+
 HTTPResponse = collections.namedtuple(
     'HTTPResponse',
     ['ok', 'code', 'headers', 'body', 'raw', 'attempts', 'duration'])
-"""Response returned from :meth:`sprockets.mixins.http.HTTPClientMixin.fetch`
-that provides a slightly higher level of functionality than Tornado's
-:cls:`tornado.httpclient.HTTPResponse` class.
+"""Response in the form of a :class:`~collections.namedtuple` returned from
+:meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` that provides a
+slightly higher level of functionality than Tornado's
+:class:`tornado.httpclient.HTTPResponse` class.
 
-Attributes
-----------
-ok : bool
-    The response status code was between 200 and 308
-code : int
-    The HTTP response status code
-headers : dict
-    The HTTP response headers
-body : mixed
-    The deserialized HTTP response body if available/supported
-raw : tornado.httpclient.HTTPResponse
-    The original Tornado HTTP response object for the request
-attempts : int
-    The number of HTTP request attempts made
-duration : float
-    The total duration of time spent making the request(s)
+:param bool ok: The response status code was between 200 and 308
+:param int code: The HTTP response status code
+:param dict headers: The HTTP response headers
+:param mixed body: The deserialized HTTP response body if available/supported
+:param tornado.httpclient.HTTPResponse raw: The original Tornado HTTP
+    response object for the request
+:param int attempts: The number of HTTP request attempts made
+:param float duration: The total duration of time spent making the request(s)
 
 """
 
@@ -103,7 +97,8 @@ class HTTPClientMixin(object):
         :param mixed body: The HTTP request body to send with the request
         :param content_type: The mime type to use for requests & responses.
             Defaults to ``application/msgpack``
-        :type content_type: :cls:`ietfparse.datastructures.ContentType` or str
+        :type content_type: :class:`~ietfparse.datastructures.ContentType` or
+            str
         :param bool follow_redirects: Follow HTTP redirects when received
         :param float connect_timeout: Timeout for initial connection in
             seconds, default 20 seconds
@@ -198,7 +193,8 @@ class HTTPClientMixin(object):
         if not request_headers:
             request_headers = {}
         request_headers.setdefault(
-            'Accept', str(content_type) or str(CONTENT_TYPE_MSGPACK))
+            'Accept', ', '.join([str(ctype) for ctype in
+                                 self.AVAILABLE_CONTENT_TYPES]))
         if body:
             request_headers.setdefault(
                 'Content-Type', str(content_type) or str(CONTENT_TYPE_MSGPACK))
