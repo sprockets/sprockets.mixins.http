@@ -28,30 +28,28 @@ Example
 
 This examples demonstrates the most basic usage of ``sprockets.mixins.http``
 
-.. code:: bash
-
-   python my-example-app.py
-
-
 .. code:: python
 
-   from tornado import gen, web
-   from sprockets.mixins import amqp
-
-   def make_app(**settings):
-       return web.Application(
-           [
-               web.url(r'/', RequestHandler),
-           ], **settings)
+    from tornado import gen, ioloop, web
+    from sprockets.mixins import http
 
 
-   class RequestHandler(http.HTTPClientMixin,
-                        correlation.HandlerMixin,
-                        web.RequestHandler):
+    class RequestHandler(http.HTTPClientMixin, web.RequestHandler):
 
        @gen.coroutine
        def get(self, *args, **kwargs):
-           response = yield self.http_fetch('https://www.google.com')
+           response = yield self.http_fetch('https://api.github.com')
+           if not response.ok:
+               self.set_status(response.code)
+           self.write(response.body)
+           self.finish()
+
+
+    if __name__ == "__main__":
+       app = web.Application([web.url(r'/', RequestHandler)])
+       app.listen(8000)
+       ioloop.IOLoop.current().start()
+
 
 License
 -------
