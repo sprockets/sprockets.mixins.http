@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import sphinx_rtd_theme
 
+from sprockets.mixins import http
+
 needs_sphinx = '1.0'
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
 templates_path = []
@@ -9,8 +11,8 @@ master_doc = 'index'
 project = 'sprockets.mixins.http'
 author = 'AWeber Communications'
 copyright = '2017, AWeber Communications'
-version = '1.0.0'
-release = '1.0'
+version = http.__version__
+release = '.'.join(version.split('.')[:-1])
 exclude_patterns = []
 pygments_style = 'sphinx'
 html_theme = 'sphinx_rtd_theme'
@@ -19,3 +21,13 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
     'tornado': ('http://www.tornadoweb.org/en/stable/', None),
 }
+
+
+def no_namedtuple_attrib_docstring(app, objtype, name, member, keep, options):
+    print(app, objtype, name, member, keep, options)
+    if objtype == 'class' and name in http.HTTPResponse._fields:
+        return True
+
+
+def setup(app):
+    app.connect('autodoc-skip-member', no_namedtuple_attrib_docstring)
