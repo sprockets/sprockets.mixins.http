@@ -24,7 +24,8 @@ intersphinx_mapping = {
 
 
 def no_namedtuple_attrib_docstring(app, objtype, name, member, keep, options):
-    return objtype == 'class' and name in http.HTTPResponse._fields
+    if objtype == 'class' and name in http.HTTPResponse._fields:
+        return True
 
 
 def setup(app):
