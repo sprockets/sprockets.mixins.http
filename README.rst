@@ -1,6 +1,6 @@
 sprockets.mixins.http
 =====================
-HTTP Client Mixin for Tornado RequestHandlers.
+HTTP Client Mixin for Tornado RequestHandlers. Automatically retries on errors, sleep when rate limited, and handles content encoding and decoding using `MsgPack <http://msgpack.org>`_ and JSON.
 
 |Version| |Travis| |CodeCov| |Docs|
 
