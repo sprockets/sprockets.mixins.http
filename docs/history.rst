@@ -1,11 +1,15 @@
 Version History
 ===============
 
-`1.0.1`_ Apr 26, 2017
+`1.0.3`_ Apr 28, 2017
+---------------------
+- Fix the installer
+
+`1.0.2`_ Apr 26, 2017
 ---------------------
 - Documentation Updates
 
-`1.0.0`_ Apr 26, 2017
+`1.0.1`_ Apr 26, 2017
 ---------------------
 - Default Accept headers include both msgpack and json
 

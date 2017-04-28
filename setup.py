@@ -3,8 +3,6 @@ import os.path
 
 import setuptools
 
-from sprockets.mixins.http import __version__
-
 
 def read_requirements(name):
     requirements = []
@@ -25,7 +23,7 @@ def read_requirements(name):
 
 setuptools.setup(
     name='sprockets.mixins.http',
-    version=__version__,
+    version='1.0.3',
     description='HTTP Client Mixin for Tornado RequestHandlers',
     long_description=open('README.rst').read(),
     url='https://github.com/sprockets/sprockets.mixins.http',

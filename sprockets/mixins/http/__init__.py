@@ -11,32 +11,11 @@ import logging
 import socket
 import time
 
-try:
-    from ietfparse import algorithms, datastructures, errors, headers
-except ImportError:  # pragma: nocover
-    logging.getLogger().error('Could not load ietfparse modules')
-    algorithms, datastructures, errors = None, None, None
+from ietfparse import algorithms, errors, headers
+from tornado import gen, httpclient
+import umsgpack
 
-    class headers(object):
-        """Dummy class for installation"""
-        @staticmethod
-        def parse_content_type(value):
-            """Dummy method"""
-            return value
-
-try:
-    from tornado import gen, httpclient
-except ImportError:  # pragma: nocover
-    logging.getLogger().error('Could not load tornado modules')
-    gen, httpclient = None, None
-
-try:
-    import umsgpack
-except ImportError:  # pragma: nocover
-    logging.getLogger().error('Could not load umsgpack module')
-    umsgpack = None
-
-__version__ = '1.0.2'
+__version__ = '1.0.3'
 
 LOGGER = logging.getLogger(__name__)
 
