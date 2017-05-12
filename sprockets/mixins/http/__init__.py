@@ -15,7 +15,7 @@ from ietfparse import algorithms, errors, headers
 from tornado import gen, httpclient
 import umsgpack
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,7 +65,8 @@ class HTTPClientMixin(object):
                    connect_timeout=DEFAULT_CONNECT_TIMEOUT,
                    request_timeout=DEFAULT_REQUEST_TIMEOUT,
                    auth_username=None,
-                   auth_password=None):
+                   auth_password=None,
+                   user_agent=None):
         """Perform a HTTP request
 
         Will retry up to ``self.MAX_HTTP_RETRIES`` times.
@@ -85,6 +86,8 @@ class HTTPClientMixin(object):
             default 20 seconds
         :param str auth_username: Username for HTTP authentication
         :param str auth_password: Password for HTTP authentication
+        :param str user_agent: The str used for the ``User-Agent`` header,
+            default used if unspecified.
         :rtype: HTTPResponse
 
         """
@@ -109,7 +112,7 @@ class HTTPClientMixin(object):
                     auth_password=auth_password,
                     connect_timeout=connect_timeout,
                     request_timeout=request_timeout,
-                    user_agent=self._http_req_user_agent(),
+                    user_agent=user_agent or self._http_req_user_agent(),
                     follow_redirects=follow_redirects,
                     raise_error=False)
             except (OSError, socket.gaierror) as error:
