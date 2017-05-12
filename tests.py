@@ -218,6 +218,23 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
                              {'foo': ['bar'], 'status_code': ['200']})
 
     @testing.gen_test()
+    def test_get_custom_user_agent(self):
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test?foo=bar&status_code=200'),
+            request_headers={'Accept': 'application/json'},
+            user_agent='custom/3.0.0')
+
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body['headers'].get('Correlation-Id'),
+                         self.correlation_id)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(
+            response.body['headers'].get('User-Agent'), 'custom/3.0.0')
+        self.assertDictEqual(response.body['args'],
+                             {'foo': ['bar'], 'status_code': ['200']})
+
+    @testing.gen_test()
     def test_post_html(self):
         expectation = '<html>foo</html>'
         response = yield self.mixin.http_fetch(
@@ -251,6 +268,26 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.attempts, 1)
         self.assertEqual(
             response.body['headers'].get('User-Agent'), 'test/0.1.0')
+        self.assertDictEqual(response.body['body'],
+                             {'foo': 'bar', 'status_code': 200})
+
+    @testing.gen_test()
+    def test_post_custom_user_agent(self):
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test'),
+            method='POST',
+            body={'foo': 'bar', 'status_code': 200},
+            request_headers={'Accept': 'application/json',
+                             'Content-Type': 'application/json'},
+            user_agent='custom/3.0.0')
+
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body['headers'].get('Correlation-Id'),
+                         self.correlation_id)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(
+            response.body['headers'].get('User-Agent'), 'custom/3.0.0')
         self.assertDictEqual(response.body['body'],
                              {'foo': 'bar', 'status_code': 200})
 
