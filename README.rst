@@ -48,11 +48,10 @@ This examples demonstrates the most basic usage of ``sprockets.mixins.http``
            if not response.ok:
                self.set_status(response.code)
            self.write(response.body)
-           self.finish()
 
 
     if __name__ == "__main__":
-       app = web.Application([web.url(r'/', RequestHandler)])
+       app = web.Application([(r'/', RequestHandler)])
        app.listen(8000)
        ioloop.IOLoop.current().start()
 
@@ -76,11 +75,10 @@ As with Tornado, to use the curl client which has numerous benefits:
            if not response.ok:
                self.set_status(response.code)
            self.write(response.body)
-           self.finish()
 
 
     if __name__ == "__main__":
-       app = web.Application([web.url(r'/', RequestHandler)])
+       app = web.Application([(r'/', RequestHandler)])
        app.listen(8000)
        ioloop.IOLoop.current().start()
 
