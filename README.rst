@@ -84,6 +84,15 @@ As with Tornado, to use the curl client which has numerous benefits:
        app.listen(8000)
        ioloop.IOLoop.current().start()
 
+Environment Variables
+---------------------
+
++------------------+----------------------------------------------------------+
+| HTTP_MAX_CLIENTS | An optional setting that specifies the maximum number of |
+|                  | simultaneous asynchronous HTTP requests. If not          |
+|                  | specified, the default Tornado value of 10 will be used. |
++------------------+----------------------------------------------------------+
+
 License
 -------
 ``sprockets.mixins.http`` is released under the `3-Clause BSD license <https://github.com/sprockets/sprockets.mixins.http/blob/master/LICENSE>`_.

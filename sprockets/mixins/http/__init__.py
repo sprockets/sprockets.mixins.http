@@ -8,6 +8,7 @@ requests.
 import collections
 import json
 import logging
+import os
 import socket
 import time
 
@@ -22,6 +23,7 @@ LOGGER = logging.getLogger(__name__)
 CONTENT_TYPE_JSON = headers.parse_content_type('application/json')
 CONTENT_TYPE_MSGPACK = headers.parse_content_type('application/msgpack')
 DEFAULT_USER_AGENT = 'sprockets.mixins.http/{}'.format(__version__)
+DEFAULT_MAX_CLIENTS = 10
 
 
 HTTPResponse = collections.namedtuple(
@@ -99,7 +101,13 @@ class HTTPClientMixin(object):
         if body:
             body = self._http_req_body_serialize(
                 body, request_headers['Content-Type'])
+
         client = httpclient.AsyncHTTPClient()
+
+        # Workaround for Tornado defect.
+        if hasattr(client, 'max_clients') and os.getenv('HTTP_MAX_CLIENTS'):
+            client.max_clients = int(os.getenv('HTTP_MAX_CLIENTS'))
+
         response, start_time = None, time.time()
         for attempt in range(0, self.MAX_HTTP_RETRIES):
             LOGGER.debug('%s %s (Attempt %i of %i) %r',
