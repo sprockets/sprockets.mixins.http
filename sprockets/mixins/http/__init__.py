@@ -66,7 +66,8 @@ class HTTPClientMixin(object):
                    request_timeout=DEFAULT_REQUEST_TIMEOUT,
                    auth_username=None,
                    auth_password=None,
-                   user_agent=None):
+                   user_agent=None,
+                   allow_nonstandard_methods=False):
         """Perform a HTTP request
 
         Will retry up to ``self.MAX_HTTP_RETRIES`` times.
@@ -88,6 +89,8 @@ class HTTPClientMixin(object):
         :param str auth_password: Password for HTTP authentication
         :param str user_agent: The str used for the ``User-Agent`` header,
             default used if unspecified.
+        :param bool allow_nonstardard_methods: Allow methods that don't adhere
+            to the HTTP spec.
         :rtype: HTTPResponse
 
         """
@@ -114,7 +117,8 @@ class HTTPClientMixin(object):
                     request_timeout=request_timeout,
                     user_agent=user_agent or self._http_req_user_agent(),
                     follow_redirects=follow_redirects,
-                    raise_error=False)
+                    raise_error=False,
+                    allow_nonstandard_methods=allow_nonstandard_methods)
             except (OSError, socket.gaierror) as error:
                 LOGGER.debug('HTTP Request Error for %s to %s'
                              'attempt %i of %i: %s',

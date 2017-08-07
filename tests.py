@@ -393,4 +393,13 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.headers['Content-Type'], 'text/html')
         self.assertEqual(response.body.decode('utf-8'), expectation)
 
+    @testing.gen_test()
+    def test_allow_nonstardard_methods(self):
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test'),
+            method='DELETE',
+            body={'foo': 'bar', 'status_code': 200},
+            allow_nonstandard_methods=True)
 
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
