@@ -90,7 +90,7 @@ class HTTPClientMixin(object):
         :param str auth_password: Password for HTTP authentication
         :param str user_agent: The str used for the ``User-Agent`` header,
             default used if unspecified.
-        :param bool allow_nonstardard_methods: Allow methods that don't adhere
+        :param bool allow_nonstandard_methods: Allow methods that don't adhere
             to the HTTP spec.
         :rtype: HTTPResponse
 
