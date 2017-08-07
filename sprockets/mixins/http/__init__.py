@@ -23,7 +23,6 @@ LOGGER = logging.getLogger(__name__)
 CONTENT_TYPE_JSON = headers.parse_content_type('application/json')
 CONTENT_TYPE_MSGPACK = headers.parse_content_type('application/msgpack')
 DEFAULT_USER_AGENT = 'sprockets.mixins.http/{}'.format(__version__)
-DEFAULT_MAX_CLIENTS = 10
 
 
 HTTPResponse = collections.namedtuple(
