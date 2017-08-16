@@ -65,6 +65,7 @@ class HTTPClientMixin(object):
                    follow_redirects=False,
                    connect_timeout=DEFAULT_CONNECT_TIMEOUT,
                    request_timeout=DEFAULT_REQUEST_TIMEOUT,
+                   max_http_attempts=MAX_HTTP_RETRIES,
                    auth_username=None,
                    auth_password=None,
                    user_agent=None,
@@ -86,6 +87,8 @@ class HTTPClientMixin(object):
             seconds, default 20 seconds
         :param float request_timeout:  Timeout for entire request in seconds,
             default 20 seconds
+        :param int max_http_attempts: Maximum number of times to retry
+            a request, default is 3 attempts
         :param str auth_username: Username for HTTP authentication
         :param str auth_password: Password for HTTP authentication
         :param str user_agent: The str used for the ``User-Agent`` header,
@@ -108,9 +111,9 @@ class HTTPClientMixin(object):
             client.max_clients = int(os.getenv('HTTP_MAX_CLIENTS'))
 
         response, start_time = None, time.time()
-        for attempt in range(0, self.MAX_HTTP_RETRIES):
+        for attempt in range(0, max_http_attempts):
             LOGGER.debug('%s %s (Attempt %i of %i) %r',
-                         method, url, attempt, self.MAX_HTTP_RETRIES,
+                         method, url, attempt + 1, max_http_attempts,
                          request_headers)
             try:
                 response = yield client.fetch(
