@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`1.0.6`_ Aug 16, 2017
+---------------------
+- Add ``max_http_attempts`` keyword param
+
 `1.0.5`_ Aug 7, 2017
 --------------------
 - Add support for allow_nonstandard_methods and max_clients
@@ -25,6 +29,7 @@ Version History
 ---------------------
 - Initial Version
 
+.. _1.0.6: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.5...1.0.6
 .. _1.0.5: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.4...1.0.5
 .. _1.0.4: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.3...1.0.4
 .. _1.0.3: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.2...1.0.3
