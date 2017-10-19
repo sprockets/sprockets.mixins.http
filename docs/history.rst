@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`1.0.7`_ Oct 19, 2017
+---------------------
+- Change the hard pin requirement on umsgpack
+
 `1.0.6`_ Aug 16, 2017
 ---------------------
 - Add ``max_http_attempts`` keyword param
