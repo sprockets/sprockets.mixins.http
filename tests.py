@@ -236,6 +236,21 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
                              {'foo': ['bar'], 'status_code': ['200']})
 
     @testing.gen_test()
+    def test_deserialize_option_set_false(self):
+        expectation = '{"data": "abcd123"}'
+        response = yield self.mixin.http_fetch(
+                self.get_url('/test?content_type=application/json'),
+                method='POST',
+                body={'response': expectation},
+                request_headers={'Accept': 'application/json'},
+                deserialize=False)
+
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(response.body.decode('utf-8'), expectation)
+
+    @testing.gen_test()
     def test_post_html(self):
         expectation = '<html>foo</html>'
         response = yield self.mixin.http_fetch(
