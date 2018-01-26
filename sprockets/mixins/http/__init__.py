@@ -1,6 +1,6 @@
 """
 HTTP Client Mixin
-=================
+,================
 A Tornado Request Handler Mixin that provides functions for making HTTP
 requests.
 
@@ -69,6 +69,7 @@ class HTTPClientMixin(object):
                    auth_username=None,
                    auth_password=None,
                    user_agent=None,
+                   deserialize=True,
                    allow_nonstandard_methods=False):
         """Perform a HTTP request
 
@@ -139,12 +140,12 @@ class HTTPClientMixin(object):
                 raise gen.Return(
                     HTTPResponse(
                         True, response.code, dict(response.headers),
-                        self._http_resp_deserialize(response),
+                        self._http_resp_deserialize(response, deserialize),
                         response, attempt + 1, time.time() - start_time))
             elif response.code in {423, 429}:
                 yield self._http_resp_rate_limited(response)
             elif 400 <= response.code < 500:
-                error = self._http_resp_error_message(response)
+                error = self._http_resp_error_message(response, deserialize)
                 LOGGER.debug('HTTP Response Error for %s to %s'
                              'attempt %i of %i (%s): %s',
                              method, url, response.code, attempt + 1,
@@ -159,7 +160,7 @@ class HTTPClientMixin(object):
                              'attempt %i of %i (%s): %s',
                              method, url, attempt + 1, self.MAX_HTTP_RETRIES,
                              response.code,
-                             self._http_resp_error_message(response))
+                             self._http_resp_error_message(response, deserialize))
 
         LOGGER.warning('HTTP Get %s failed after %i attempts', url,
                        self.MAX_HTTP_RETRIES)
@@ -167,7 +168,7 @@ class HTTPClientMixin(object):
             raise gen.Return(
                 HTTPResponse(
                     False, response.code, dict(response.headers),
-                    self._http_resp_error_message(response) or response.body,
+                    self._http_resp_error_message(response, deserialize) or response.body,
                     response, self.MAX_HTTP_RETRIES,
                     time.time() - start_time))
         raise gen.Return(
@@ -253,9 +254,9 @@ class HTTPClientMixin(object):
             return value.decode('utf-8')
         return value
 
-    def _http_resp_deserialize(self, response):
+    def _http_resp_deserialize(self, response, deserialize):
         """Try and deserialize a response body based upon the specified
-        content type.
+        content type, unless the deserialize flag is set.
 
         :param tornado.httpclient.HTTPResponse: The HTTP response to decode
         :rtype: mixed
@@ -270,20 +271,25 @@ class HTTPClientMixin(object):
         except errors.NoMatch:
             return response.body
 
-        if content_type[0] == CONTENT_TYPE_JSON:
-            return self._http_resp_decode(
-                json.loads(self._http_resp_decode(response.body)))
-        elif content_type[0] == CONTENT_TYPE_MSGPACK:
-            return self._http_resp_decode(umsgpack.unpackb(response.body))
+        if deserialize:
+            if content_type[0] == CONTENT_TYPE_JSON:
+                return self._http_resp_decode(
+                    json.loads(self._http_resp_decode(response.body)))
+            elif content_type[0] == CONTENT_TYPE_MSGPACK:
+                return self._http_resp_decode(umsgpack.unpackb(response.body))
 
-    def _http_resp_error_message(self, response):
+        else:
+            return response.body
+
+
+    def _http_resp_error_message(self, response, deserialize):
         """Try and extract the error message from a HTTP error response.
 
         :param tornado.httpclient.HTTPResponse response: The response
         :rtype: str
 
         """
-        response_body = self._http_resp_deserialize(response)
+        response_body = self._http_resp_deserialize(response, deserialize)
         if isinstance(response_body, dict) and 'message' in response_body:
             return response_body['message']
         return response_body

@@ -31,6 +31,15 @@ Requirements
 - `tornado <https://tornadoweb.org>`_ >=4.2.0,<5
 - `u-msgpack-python <http://u-msgpack-python.readthedocs.io/en/latest/>`_ >=2.1,<3
 
+Contributing
+------------
+.. code:: bash
+
+    $ python3.5 -m venv env
+    $ source env/bin/activate
+    (env) $ env/bin/pip install -r requires/testing.txt -i https://pypi.python.org/simple
+    (env) $ env/bin/nosetests -xvs tests.py
+
 Example
 -------
 
