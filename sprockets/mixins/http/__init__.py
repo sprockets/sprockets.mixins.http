@@ -133,7 +133,7 @@ class HTTPClientMixin(object):
                 LOGGER.debug('HTTP Request Error for %s to %s'
                              'attempt %i of %i: %s',
                              method, url, attempt + 1,
-                             self.MAX_HTTP_RETRIES, error)
+                             max_http_attempts, error)
                 continue
             if 200 <= response.code < 400:
                 raise gen.Return(
@@ -148,7 +148,7 @@ class HTTPClientMixin(object):
                 LOGGER.debug('HTTP Response Error for %s to %s'
                              'attempt %i of %i (%s): %s',
                              method, url, response.code, attempt + 1,
-                             self.MAX_HTTP_RETRIES, error)
+                             max_http_attempts, error)
                 raise gen.Return(
                     HTTPResponse(
                         False, response.code, dict(response.headers),
@@ -157,22 +157,22 @@ class HTTPClientMixin(object):
             elif response.code >= 500:
                 LOGGER.error('HTTP Response Error for %s to %s, '
                              'attempt %i of %i (%s): %s',
-                             method, url, attempt + 1, self.MAX_HTTP_RETRIES,
+                             method, url, attempt + 1, max_http_attempts,
                              response.code,
                              self._http_resp_error_message(response))
 
         LOGGER.warning('HTTP Get %s failed after %i attempts', url,
-                       self.MAX_HTTP_RETRIES)
+                       max_http_attempts)
         if response:
             raise gen.Return(
                 HTTPResponse(
                     False, response.code, dict(response.headers),
                     self._http_resp_error_message(response) or response.body,
-                    response, self.MAX_HTTP_RETRIES,
+                    response, max_http_attempts,
                     time.time() - start_time))
         raise gen.Return(
             HTTPResponse(
-                False, 599, None, None, None, self.MAX_HTTP_RETRIES,
+                False, 599, None, None, None, max_http_attempts,
                 time.time() - start_time))
 
     def _http_req_apply_default_headers(self, request_headers,
