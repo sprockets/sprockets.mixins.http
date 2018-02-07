@@ -1,6 +1,12 @@
 Version History
 ===============
 
+`1.0.8`_ Feb 7, 2018
+--------------------
+- Add ``max_redirects`` keyword param
+- Add ``validate_cert`` keyword param
+- Fix log records always using default number of attempts
+
 `1.0.7`_ Oct 19, 2017
 ---------------------
 - Change the hard pin requirement on umsgpack
@@ -33,6 +39,8 @@ Version History
 ---------------------
 - Initial Version
 
+.. _1.0.8: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.7...1.0.8
+.. _1.0.7: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.6...1.0.7
 .. _1.0.6: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.5...1.0.6
 .. _1.0.5: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.4...1.0.5
 .. _1.0.4: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.3...1.0.4
