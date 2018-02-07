@@ -71,6 +71,7 @@ class HTTPClientMixin(object):
                    auth_username=None,
                    auth_password=None,
                    user_agent=None,
+                   validate_cert=True,
                    allow_nonstandard_methods=False):
         """Perform a HTTP request
 
@@ -97,6 +98,8 @@ class HTTPClientMixin(object):
         :param str auth_password: Password for HTTP authentication
         :param str user_agent: The str used for the ``User-Agent`` header,
             default used if unspecified.
+        :param bool validate_cert: For HTTPS requests, validate the server's
+            certifacte? Default is True
         :param bool allow_nonstandard_methods: Allow methods that don't adhere
             to the HTTP spec.
         :rtype: HTTPResponse
@@ -133,6 +136,7 @@ class HTTPClientMixin(object):
                     follow_redirects=follow_redirects,
                     max_redirects=max_redirects,
                     raise_error=False,
+                    validate_cert=validate_cert,
                     allow_nonstandard_methods=allow_nonstandard_methods)
             except (OSError, socket.gaierror) as error:
                 LOGGER.debug('HTTP Request Error for %s to %s'
