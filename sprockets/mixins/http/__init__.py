@@ -55,6 +55,7 @@ class HTTPClientMixin(object):
     DEFAULT_REQUEST_TIMEOUT = 60
 
     MAX_HTTP_RETRIES = 3
+    MAX_REDIRECTS = 5
 
     @gen.coroutine
     def http_fetch(self, url,
@@ -63,6 +64,7 @@ class HTTPClientMixin(object):
                    body=None,
                    content_type=CONTENT_TYPE_MSGPACK,
                    follow_redirects=False,
+                   max_redirects=MAX_REDIRECTS,
                    connect_timeout=DEFAULT_CONNECT_TIMEOUT,
                    request_timeout=DEFAULT_REQUEST_TIMEOUT,
                    max_http_attempts=MAX_HTTP_RETRIES,
@@ -83,6 +85,8 @@ class HTTPClientMixin(object):
         :type content_type: :class:`~ietfparse.datastructures.ContentType` or
             str
         :param bool follow_redirects: Follow HTTP redirects when received
+        :param int max_redirects: Maximum number of redirects to follow,
+            default is 5
         :param float connect_timeout: Timeout for initial connection in
             seconds, default 20 seconds
         :param float request_timeout:  Timeout for entire request in seconds,
@@ -127,6 +131,7 @@ class HTTPClientMixin(object):
                     request_timeout=request_timeout,
                     user_agent=user_agent or self._http_req_user_agent(),
                     follow_redirects=follow_redirects,
+                    max_redirects=max_redirects,
                     raise_error=False,
                     allow_nonstandard_methods=allow_nonstandard_methods)
             except (OSError, socket.gaierror) as error:
