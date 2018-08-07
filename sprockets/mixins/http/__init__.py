@@ -16,7 +16,7 @@ from ietfparse import algorithms, errors, headers
 from tornado import gen, httpclient
 import umsgpack
 
-__version__ = '1.0.8'
+__version__ = '1.0.9'
 
 LOGGER = logging.getLogger(__name__)
 

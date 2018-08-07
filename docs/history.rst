@@ -1,6 +1,11 @@
 Version History
 ===============
 
+`1.0.9`_ Aug 7, 2018
+--------------------
+- Add support for Python 3.6 and 3.7
+- Add support for Tornado < 6
+
 `1.0.8`_ Feb 7, 2018
 --------------------
 - Add ``max_redirects`` keyword param
@@ -39,6 +44,7 @@ Version History
 ---------------------
 - Initial Version
 
+.. _1.0.9: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.8...1.0.9
 .. _1.0.8: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.7...1.0.8
 .. _1.0.7: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.6...1.0.7
 .. _1.0.6: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.5...1.0.6
