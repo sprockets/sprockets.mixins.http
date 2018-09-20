@@ -144,6 +144,12 @@ class HTTPClientMixin(object):
                              method, url, attempt + 1,
                              max_http_attempts, error)
                 continue
+            warning_header = response.headers.get('Warning')
+            if warning_header is not None:
+                LOGGER.warning('HTTP Warning Header for %s to %s, '
+                               'attempt %i of %i (%s): %s',
+                               method, url, response.code, attempt + 1,
+                               max_http_attempts, warning_header)
             if 200 <= response.code < 400:
                 raise gen.Return(
                     HTTPResponse(
