@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`1.1.0`_ Oct 11, 2018
+--------------------
+- Add logging of response ``Warning`` headers
+
 `1.0.9`_ Aug 7, 2018
 --------------------
 - Add support for Python 3.6 and 3.7
@@ -44,6 +48,7 @@ Version History
 ---------------------
 - Initial Version
 
+.. _1.1.0: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.9...1.1.0
 .. _1.0.9: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.8...1.0.9
 .. _1.0.8: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.7...1.0.8
 .. _1.0.7: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.6...1.0.7
