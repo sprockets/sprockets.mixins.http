@@ -2,7 +2,7 @@ Version History
 ===============
 
 `1.1.0`_ Oct 11, 2018
---------------------
+---------------------
 - Add logging of response ``Warning`` headers
 
 `1.0.9`_ Aug 7, 2018
