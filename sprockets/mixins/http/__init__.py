@@ -6,15 +6,14 @@ requests.
 
 """
 import collections
-import json
 import logging
 import os
 import socket
 import time
 
 from ietfparse import algorithms, errors, headers
+from sprockets.mixins.mediatype import transcoders
 from tornado import gen, httpclient
-import umsgpack
 
 __version__ = '1.1.0'
 
@@ -56,6 +55,11 @@ class HTTPClientMixin(object):
 
     MAX_HTTP_RETRIES = 3
     MAX_REDIRECTS = 5
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__json_transcoder = transcoders.JSONTranscoder()
+        self.__msgpack_transcoder = transcoders.MsgPackTranscoder()
 
     @gen.coroutine
     def http_fetch(self, url,
@@ -216,8 +220,7 @@ class HTTPClientMixin(object):
                     'Correlation-Id', self.request.headers['Correlation-Id'])
         return request_headers
 
-    @staticmethod
-    def _http_req_body_serialize(body, content_type):
+    def _http_req_body_serialize(self, body, content_type):
         """Conditionally serialize the request body value if mime_type is set
         and it's serializable.
 
@@ -231,9 +234,9 @@ class HTTPClientMixin(object):
 
         content_type = headers.parse_content_type(content_type)
         if content_type == CONTENT_TYPE_JSON:
-            return json.dumps(body)
+            return self.__json_transcoder.dumps(body)
         elif content_type == CONTENT_TYPE_MSGPACK:
-            return umsgpack.packb(body)
+            return self.__msgpack_transcoder.packb(body)
         raise ValueError('Unsupported Content Type')
 
     def _http_req_user_agent(self):
@@ -287,9 +290,13 @@ class HTTPClientMixin(object):
 
         if content_type[0] == CONTENT_TYPE_JSON:
             return self._http_resp_decode(
-                json.loads(self._http_resp_decode(response.body)))
+                self.__json_transcoder.loads(
+                    self._http_resp_decode(response.body)
+                )
+            )
         elif content_type[0] == CONTENT_TYPE_MSGPACK:
-            return self._http_resp_decode(umsgpack.unpackb(response.body))
+            return self._http_resp_decode(
+                self.__msgpack_transcoder.unpackb(response.body))
 
     def _http_resp_error_message(self, response):
         """Try and extract the error message from a HTTP error response.
