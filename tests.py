@@ -110,7 +110,7 @@ class TestHandler(web.RequestHandler):
 class MixinTestCase(testing.AsyncHTTPTestCase):
 
     def setUp(self):
-        super(MixinTestCase, self).setUp()
+        super().setUp()
         self.correlation_id = str(uuid.uuid4())
         self.mixin = self.create_mixin()
 
