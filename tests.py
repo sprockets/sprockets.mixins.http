@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -413,3 +414,16 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         client = httpclient.AsyncHTTPClient()
         self.assertEqual(client.max_clients, 25)
 
+    @testing.gen_test()
+    def test_missing_content_type(self):
+        # Craft a response that lacks a Content-Type header.
+        request = httpclient.HTTPRequest(
+            self.get_url('/test?foo=bar&status_code=200'))
+        response = httpclient.HTTPResponse(
+            request, code=200, headers={},
+            buffer=io.StringIO('Do not try to deserialize me.'))
+        # Try to deserialize that response. It should not raise an exception.
+        try:
+            response_body = self.mixin._http_resp_deserialize(response)
+        except KeyError:
+            self.fail('http_fetch raised KeyError!')
