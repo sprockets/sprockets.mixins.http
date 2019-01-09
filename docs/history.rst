@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`1.1.1`_ Jan 9, 2019
+--------------------
+- Fix failure when response lacks Content-Type header
+
 `1.1.0`_ Oct 11, 2018
 ---------------------
 - Add logging of response ``Warning`` headers
@@ -48,6 +52,7 @@ Version History
 ---------------------
 - Initial Version
 
+.. _1.1.1: https://github.com/sprockets/sprockets.mixins.http/compare/1.1.0...1.1.1
 .. _1.1.0: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.9...1.1.0
 .. _1.0.9: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.8...1.0.9
 .. _1.0.8: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.7...1.0.8
