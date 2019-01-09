@@ -2,6 +2,8 @@ import io
 import json
 import logging
 import os
+import sys
+import unittest
 import uuid
 
 from tornado import httpclient, httputil, testing, web
@@ -415,6 +417,8 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(client.max_clients, 25)
 
     @testing.gen_test()
+    @unittest.skipUnless(sys.version_info >= (3, ),
+                         'StringIO requires Python 3')
     def test_missing_content_type(self):
         # Craft a response that lacks a Content-Type header.
         request = httpclient.HTTPRequest(
