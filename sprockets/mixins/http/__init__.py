@@ -278,6 +278,8 @@ class HTTPClientMixin(object):
         """
         if not response.body:
             return None
+        if 'Content-Type' not in response.headers:
+            return response.body
         try:
             content_type = algorithms.select_content_type(
                 [headers.parse_content_type(response.headers['Content-Type'])],
