@@ -5,16 +5,16 @@ A Tornado Request Handler Mixin that provides functions for making HTTP
 requests.
 
 """
+import asyncio
 import collections
-import json
 import logging
 import os
 import socket
 import time
 
 from ietfparse import algorithms, errors, headers
-from tornado import gen, httpclient
-import umsgpack
+from sprockets.mixins.mediatype import transcoders
+from tornado import httpclient
 
 __version__ = '1.1.1'
 
@@ -45,7 +45,7 @@ slightly higher level of functionality than Tornado's
 """
 
 
-class HTTPClientMixin(object):
+class HTTPClientMixin:
     """Mixin for making http requests. Requests using the asynchronous
     :meth:`HTTPClientMixin.http_fetch` method """
 
@@ -57,22 +57,26 @@ class HTTPClientMixin(object):
     MAX_HTTP_RETRIES = 3
     MAX_REDIRECTS = 5
 
-    @gen.coroutine
-    def http_fetch(self, url,
-                   method='GET',
-                   request_headers=None,
-                   body=None,
-                   content_type=CONTENT_TYPE_MSGPACK,
-                   follow_redirects=False,
-                   max_redirects=MAX_REDIRECTS,
-                   connect_timeout=DEFAULT_CONNECT_TIMEOUT,
-                   request_timeout=DEFAULT_REQUEST_TIMEOUT,
-                   max_http_attempts=MAX_HTTP_RETRIES,
-                   auth_username=None,
-                   auth_password=None,
-                   user_agent=None,
-                   validate_cert=True,
-                   allow_nonstandard_methods=False):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__json_transcoder = transcoders.JSONTranscoder()
+        self.__msgpack_transcoder = transcoders.MsgPackTranscoder()
+
+    async def http_fetch(self, url,
+                         method='GET',
+                         request_headers=None,
+                         body=None,
+                         content_type=CONTENT_TYPE_MSGPACK,
+                         follow_redirects=False,
+                         max_redirects=MAX_REDIRECTS,
+                         connect_timeout=DEFAULT_CONNECT_TIMEOUT,
+                         request_timeout=DEFAULT_REQUEST_TIMEOUT,
+                         max_http_attempts=MAX_HTTP_RETRIES,
+                         auth_username=None,
+                         auth_password=None,
+                         user_agent=None,
+                         validate_cert=True,
+                         allow_nonstandard_methods=False):
         """Perform a HTTP request
 
         Will retry up to ``self.MAX_HTTP_RETRIES`` times.
@@ -123,7 +127,7 @@ class HTTPClientMixin(object):
                          method, url, attempt + 1, max_http_attempts,
                          request_headers)
             try:
-                response = yield client.fetch(
+                response = await client.fetch(
                     url,
                     method=method,
                     headers=request_headers,
@@ -151,24 +155,22 @@ class HTTPClientMixin(object):
                                method, url, response.code, attempt + 1,
                                max_http_attempts, warning_header)
             if 200 <= response.code < 400:
-                raise gen.Return(
-                    HTTPResponse(
+                return HTTPResponse(
                         True, response.code, dict(response.headers),
                         self._http_resp_deserialize(response),
-                        response, attempt + 1, time.time() - start_time))
+                        response, attempt + 1, time.time() - start_time)
             elif response.code in {423, 429}:
-                yield self._http_resp_rate_limited(response)
+                await self._http_resp_rate_limited(response)
             elif 400 <= response.code < 500:
                 error = self._http_resp_error_message(response)
                 LOGGER.debug('HTTP Response Error for %s to %s'
                              'attempt %i of %i (%s): %s',
                              method, url, response.code, attempt + 1,
                              max_http_attempts, error)
-                raise gen.Return(
-                    HTTPResponse(
+                return HTTPResponse(
                         False, response.code, dict(response.headers),
                         error, response, attempt + 1,
-                        time.time() - start_time))
+                        time.time() - start_time)
             elif response.code >= 500:
                 LOGGER.error('HTTP Response Error for %s to %s, '
                              'attempt %i of %i (%s): %s',
@@ -179,16 +181,14 @@ class HTTPClientMixin(object):
         LOGGER.warning('HTTP Get %s failed after %i attempts', url,
                        max_http_attempts)
         if response:
-            raise gen.Return(
-                HTTPResponse(
+            return HTTPResponse(
                     False, response.code, dict(response.headers),
                     self._http_resp_error_message(response) or response.body,
                     response, max_http_attempts,
-                    time.time() - start_time))
-        raise gen.Return(
-            HTTPResponse(
+                    time.time() - start_time)
+        return HTTPResponse(
                 False, 599, None, None, None, max_http_attempts,
-                time.time() - start_time))
+                time.time() - start_time)
 
     def _http_req_apply_default_headers(self, request_headers,
                                         content_type, body):
@@ -216,8 +216,7 @@ class HTTPClientMixin(object):
                     'Correlation-Id', self.request.headers['Correlation-Id'])
         return request_headers
 
-    @staticmethod
-    def _http_req_body_serialize(body, content_type):
+    def _http_req_body_serialize(self, body, content_type):
         """Conditionally serialize the request body value if mime_type is set
         and it's serializable.
 
@@ -231,9 +230,9 @@ class HTTPClientMixin(object):
 
         content_type = headers.parse_content_type(content_type)
         if content_type == CONTENT_TYPE_JSON:
-            return json.dumps(body)
+            return self.__json_transcoder.dumps(body)
         elif content_type == CONTENT_TYPE_MSGPACK:
-            return umsgpack.packb(body)
+            return self.__msgpack_transcoder.packb(body)
         raise ValueError('Unsupported Content Type')
 
     def _http_req_user_agent(self):
@@ -289,9 +288,13 @@ class HTTPClientMixin(object):
 
         if content_type[0] == CONTENT_TYPE_JSON:
             return self._http_resp_decode(
-                json.loads(self._http_resp_decode(response.body)))
+                self.__json_transcoder.loads(
+                    self._http_resp_decode(response.body)
+                )
+            )
         elif content_type[0] == CONTENT_TYPE_MSGPACK:
-            return self._http_resp_decode(umsgpack.unpackb(response.body))
+            return self._http_resp_decode(
+                self.__msgpack_transcoder.unpackb(response.body))
 
     def _http_resp_error_message(self, response):
         """Try and extract the error message from a HTTP error response.
@@ -316,4 +319,4 @@ class HTTPClientMixin(object):
         """
         duration = int(response.headers.get('Retry-After', 3))
         LOGGER.warning('Rate Limited by, retrying in %i seconds', duration)
-        return gen.sleep(duration)
+        return asyncio.sleep(duration)

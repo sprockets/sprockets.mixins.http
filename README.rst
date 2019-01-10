@@ -38,15 +38,14 @@ This examples demonstrates the most basic usage of ``sprockets.mixins.http``
 
 .. code:: python
 
-    from tornado import gen, ioloop, web
+    from tornado import ioloop, web
     from sprockets.mixins import http
 
 
     class RequestHandler(http.HTTPClientMixin, web.RequestHandler):
 
-       @gen.coroutine
-       def get(self, *args, **kwargs):
-           response = yield self.http_fetch('https://api.github.com')
+       async def get(self, *args, **kwargs):
+           response = await self.http_fetch('https://api.github.com')
            if not response.ok:
                self.set_status(response.code)
            self.write(response.body)
@@ -62,7 +61,7 @@ As with Tornado, to use the curl client which has numerous benefits:
 
 .. code:: python
 
-    from tornado import gen, httpclient, ioloop, web
+    from tornado import httpclient, ioloop, web
     from sprockets.mixins import http
 
     httpclient.AsyncHTTPClient.configure(
@@ -71,9 +70,8 @@ As with Tornado, to use the curl client which has numerous benefits:
 
     class RequestHandler(http.HTTPClientMixin, web.RequestHandler):
 
-       @gen.coroutine
-       def get(self, *args, **kwargs):
-           response = yield self.http_fetch('https://api.github.com')
+       async def get(self, *args, **kwargs):
+           response = await self.http_fetch('https://api.github.com')
            if not response.ok:
                self.set_status(response.code)
            self.write(response.body)
