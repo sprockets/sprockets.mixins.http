@@ -27,9 +27,9 @@ http://pythonhosted.org/sprockets.mixins.http/
 
 Requirements
 ------------
-- `ietfparse <http://ietfparse.readthedocs.io>`_ >=1.4.1,<2
-- `tornado <http://www.tornadoweb.org/>`_ >=4.2.0,<5
-- `u-msgpack-python <https://pypi.python.org/pypi/u-msgpack-python>`_ >=2.1,<3
+- `ietfparse <http://ietfparse.readthedocs.io>`_ >=1.5.1
+- `tornado <http://www.tornadoweb.org/>`_ >=5
+- `sprockets.mixins.metrics[msgpack] <https://sprocketsmixinsmetrics.readthedocs.io/>`_ >=3
 
 Example
 -------
