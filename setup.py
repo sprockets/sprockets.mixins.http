@@ -23,7 +23,7 @@ def read_requirements(name):
 
 setuptools.setup(
     name='sprockets.mixins.http',
-    version='1.1.1',
+    version='2.0.0',
     description='HTTP Client Mixin for Tornado RequestHandlers',
     long_description=open('README.rst').read(),
     url='https://github.com/sprockets/sprockets.mixins.http',
@@ -31,8 +31,10 @@ setuptools.setup(
     author_email='api@aweber.com',
     license='BSD',
     classifiers=[
-        'Development Status :: 3 - Alpha', 'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License', 'Natural Language :: English',
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',

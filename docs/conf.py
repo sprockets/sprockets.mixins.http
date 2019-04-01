@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import sphinx_rtd_theme
-
 from sprockets.mixins import http
 
 needs_sphinx = '1.0'
