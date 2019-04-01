@@ -1,4 +1,3 @@
-import io
 import json
 import logging
 import os
@@ -105,6 +104,9 @@ class TestHandler(web.RequestHandler):
         if content_type:
             LOGGER.debug('Setting response content-type: %r', content_type)
             self.set_header('Content-Type', content_type)
+        if 'Correlation-Id' in self.request.headers:
+            self.set_header(
+                'Correlation-Id', self.request.headers['Correlation-ID'])
         return self.write(decode(payload))
 
     def status_code(self):
@@ -134,7 +136,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
                 add_correlation else {}))
         return mixin
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_consumer_user_agent(self):
 
         class Process:
@@ -156,7 +158,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(
             response.body['headers'].get('User-Agent'), 'consumer/1.1.1')
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_consumer_user_agent_error(self):
 
         class Consumer(http.HTTPClientMixin):
@@ -175,7 +177,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             response.body['headers'].get('User-Agent'),
             'sprockets.mixins.http/{}'.format(http.__version__))
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_default_user_agent(self):
         mixin = http.HTTPClientMixin()
         response = yield mixin.http_fetch(
@@ -187,7 +189,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             response.body['headers'].get('User-Agent'),
             'sprockets.mixins.http/{}'.format(http.__version__))
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_default_user_agent_with_partial_config(self):
         del self._app.settings['version']
         response = yield self.mixin.http_fetch(
@@ -195,11 +197,13 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.attempts, 1)
+        self.assertGreater(response.duration, 0)
+        self.assertEqual(response.code, response.raw.code)
         self.assertEqual(
             response.body['headers'].get('User-Agent'),
             'sprockets.mixins.http/{}'.format(http.__version__))
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_socket_errors(self):
         with mock.patch(
                 'tornado.httpclient.AsyncHTTPClient.fetch') as fetch:
@@ -208,8 +212,13 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertFalse(response.ok)
         self.assertEqual(response.code, 599)
         self.assertEqual(response.attempts, 3)
+        self.assertIsNone(response.body)
+        self.assertIsNone(response.headers)
+        self.assertIsNone(response.links)
+        self.assertIsNone(response.raw)
+        self.assertTrue([isinstance(e, OSError) for e in response.exceptions])
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_without_correlation_id_behavior(self):
         mixin = self.create_mixin(False)
         response = yield mixin.http_fetch(
@@ -218,7 +227,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 502)
         self.assertEqual(response.attempts, 3)
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_get(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test?foo=bar&status_code=200'))
@@ -231,8 +240,9 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             response.body['headers'].get('User-Agent'), 'test/0.1.0')
         self.assertDictEqual(response.body['args'],
                              {'foo': ['bar'], 'status_code': ['200']})
+        self.assertIsNone(response.links)
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_post(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
@@ -249,7 +259,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertDictEqual(response.body['body'],
                              {'foo': 'bar', 'status_code': 200})
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_get_json(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test?foo=bar&status_code=200'),
@@ -265,7 +275,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertDictEqual(response.body['args'],
                              {'foo': ['bar'], 'status_code': ['200']})
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_get_custom_user_agent(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test?foo=bar&status_code=200'),
@@ -282,7 +292,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertDictEqual(response.body['args'],
                              {'foo': ['bar'], 'status_code': ['200']})
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_post_html(self):
         expectation = '<html>foo</html>'
         response = yield self.mixin.http_fetch(
@@ -300,7 +310,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             response.body['headers'].get('User-Agent'), 'test/0.1.0')
         self.assertEqual(response.body['body'], expectation)
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_post_json(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
@@ -319,7 +329,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertDictEqual(response.body['body'],
                              {'foo': 'bar', 'status_code': 200})
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_post_custom_user_agent(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
@@ -339,7 +349,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertDictEqual(response.body['body'],
                              {'foo': 'bar', 'status_code': 200})
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_post_msgpack(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
@@ -357,7 +367,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertDictEqual(response.body['body'],
                              {'foo': 'bar', 'status_code': 200})
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_post_pre_serialized_json(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
@@ -375,7 +385,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertDictEqual(response.body['body'],
                              {'foo': 'bar', 'status_code': 200})
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_post_pre_serialized_msgpack(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
@@ -394,7 +404,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
                              {'foo': 'bar', 'status_code': 200})
         self.assertEqual([r.code for r in response.history], [200])
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_rate_limiting_behavior(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/error?status_code=429'))
@@ -403,7 +413,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.attempts, 3)
         self.assertEqual([r.code for r in response.history], [429, 429, 429])
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_error_response(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/error?status_code=400&message=Test%20Error'))
@@ -412,16 +422,16 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.attempts, 1)
         self.assertEqual(response.body, 'Test Error')
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_error_retry(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/error?status_code=502'))
         self.assertFalse(response.ok)
         self.assertEqual(response.code, 502)
         self.assertEqual(response.attempts, 3)
-        self.assertEqual(response.body, b'')
+        self.assertIsNone(response.body)
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_unsupported_content_type(self):
         with self.assertRaises(ValueError):
             yield self.mixin.http_fetch(
@@ -430,7 +440,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
                 body=['foo', 'bar'],
                 request_headers={'Content-Type': 'text/html'})
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_unsupported_accept(self):
         expectation = '<html>foo</html>'
         response = yield self.mixin.http_fetch(
@@ -443,7 +453,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.headers['Content-Type'], 'text/html')
         self.assertEqual(response.body.decode('utf-8'), expectation)
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_allow_nonstardard_methods(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
@@ -452,7 +462,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             allow_nonstandard_methods=True)
         self.assertTrue(response.ok)
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_max_clients_settings_supported(self):
         os.environ['HTTP_MAX_CLIENTS'] = '25'
         response = yield self.mixin.http_fetch(
@@ -462,21 +472,20 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         client = httpclient.AsyncHTTPClient()
         self.assertEqual(client.max_clients, 25)
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_missing_content_type(self):
         # Craft a response that lacks a Content-Type header.
-        request = httpclient.HTTPRequest(
-            self.get_url('/test?foo=bar&status_code=200'))
-        response = httpclient.HTTPResponse(
-            request, code=200, headers={},
-            buffer=io.BytesIO(b'Do not try to deserialize me.'))
-        # Try to deserialize that response. It should not raise an exception.
-        try:
-            self.mixin._http_resp_deserialize(response)
-        except KeyError:
-            self.fail('http_fetch raised KeyError!')
+        body = 'Do not try to deserialize me'
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test?foo=bar&status_code=200&content_type=0'),
+            'POST',
+            body=body,
+            content_type='text/plain')
+        self.assertTrue(response.ok)
+        del response._responses[-1].headers['Content-Type']
+        self.assertIsInstance(response.body, bytes)
 
-    @testing.gen_test()
+    @testing.gen_test
     def test_get_link_header(self):
         body = {'link': '<http://example.com/TheBook/chapter2>; '
                 'rel="previous"; '
@@ -495,13 +504,15 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(
             response.body['headers'].get('User-Agent'), 'test/0.1.0')
         self.assertDictEqual(response.body['body'], body)
-        self.assertEqual(
-            response.links[0].target, 'http://example.com/TheBook/chapter2')
-        self.assertDictEqual(
-            dict(response.links[0].parameters),
-            {'rel': 'previous', 'title': 'previous chapter'})
 
-    @testing.gen_test()
+        expectation = {
+            'target': 'http://example.com/TheBook/chapter2',
+            'rel': 'previous',
+            'title': 'previous chapter'
+        }
+        self.assertDictEqual(response.links[0], expectation)
+
+    @testing.gen_test
     def test_get_warning_header(self):
         body = {'warning': '110 anderson/1.3.37 "Response is stale"',
                 'status_code': 200}
@@ -522,3 +533,24 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(
             response.body['headers'].get('User-Agent'), 'test/0.1.0')
         self.assertDictEqual(response.body['body'], body)
+
+    @testing.gen_test
+    def test_correlation_id_attribute(self):
+        mixin = http.HTTPClientMixin()
+        mixin.correlation_id = str(uuid.uuid4())
+        response = yield mixin.http_fetch(
+            self.get_url('/test?foo=bar&status_code=200'))
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(
+            response.headers['Correlation-Id'], mixin.correlation_id)
+
+    @testing.gen_test
+    def test_dont_retry(self):
+        response = yield self.mixin.http_fetch(
+            self.get_url('/error?status_code=429'), dont_retry={429})
+        self.assertFalse(response.ok)
+        self.assertEqual(response.code, 429)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual([r.code for r in response.history], [429])

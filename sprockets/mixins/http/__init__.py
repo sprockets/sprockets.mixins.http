@@ -6,7 +6,6 @@ requests.
 
 """
 import asyncio
-import collections
 import logging
 import os
 import socket
@@ -21,35 +20,227 @@ try:
 except ModuleNotFoundError:
     CurlError = OSError
 
-__version__ = '1.2.0'
+__version__ = '2.0.0'
 
 LOGGER = logging.getLogger(__name__)
 
 CONTENT_TYPE_JSON = headers.parse_content_type('application/json')
 CONTENT_TYPE_MSGPACK = headers.parse_content_type('application/msgpack')
+AVAILABLE_CONTENT_TYPES = [CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK]
 DEFAULT_USER_AGENT = 'sprockets.mixins.http/{}'.format(__version__)
 
-HTTPResponse = collections.namedtuple(
-    'HTTPResponse',
-    ['ok', 'code', 'headers', 'body', 'raw', 'attempts', 'duration',
-     'links', 'history'])
-"""Response in the form of a :class:`~collections.namedtuple` returned from
-:py:meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` that provides a
-slightly higher level of functionality than Tornado's
-:py:class:`tornado.httpclient.HTTPResponse` class.
 
-:param bool ok: The response status code was between 200 and 308
-:param int code: The HTTP response status code
-:param dict headers: The HTTP response headers
-:param mixed body: The deserialized HTTP response body if available/supported
-:param tornado.httpclient.HTTPResponse raw: The original Tornado HTTP
-    response object for the request
-:param int attempts: The number of HTTP request attempts made
-:param float duration: The total duration of time spent making the request(s)
-:param list links: A list of parsed link headers, if provided in response
-:param list history: A list of all responses returned as part of a request
+class HTTPResponse:
+    """Encapsulate the response(s) for requests made using the
+     :meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` method.
 
-"""
+    """
+
+    def __init__(self):
+        self._exceptions = []
+        self._finish = None
+        self._json = transcoders.JSONTranscoder()
+        self._msgpack = transcoders.MsgPackTranscoder()
+        self._responses = []
+        self._start = time.time()
+
+    def __len__(self):
+        """Return the length of the exception stack and response stack.
+
+        :rtype: int
+
+        """
+        return len(self._exceptions) + len(self._responses)
+
+    def append_exception(self, error):
+        """Append an exception raised when making a request
+
+        :param Exception error: The exception raised when making the request
+
+        """
+        self._exceptions.append(error)
+
+    def append_response(self, response):
+        """Append the response to the stack of responses.
+
+        :param tornado.httpclient.HTTPResponse response: The HTTP response
+
+        """
+        self._responses.append(response)
+        if 'Warning' in response.headers:
+            LOGGER.warning(
+                'HTTP %s %s Warning (%s): %s (attempt %s)',
+                response.request.method, response.request.url,
+                response.code, response.headers['Warning'],
+                len(self._responses))
+
+    def finish(self):
+        """Mark the processing as finished"""
+        self._finish = time.time()
+
+    @property
+    def attempts(self):
+        """Return the number of HTTP attempts made by calculating the number
+        of exceptions and responses the object contains.
+
+        :rtype: int
+
+        """
+        return len(self)
+
+    @property
+    def body(self):
+        """Returns the HTTP response body, deserialized if possible.
+
+        :rtype: mixed
+
+        """
+        if not self._responses:
+            return None
+        if self._responses[-1].code >= 400:
+            return self._error_message()
+        return self._deserialize()
+
+    @property
+    def code(self):
+        """Returns the HTTP status code of the response.
+
+        :rtype: int
+
+        """
+        return self._responses[-1].code if self._responses else 599
+
+    @property
+    def duration(self):
+        """Return the calculated duration for the total amount of time
+        across all retries.
+
+        :rtype: float
+
+        """
+        return (self._finish or time.time()) - self._start
+
+    @property
+    def exceptions(self):
+        """Return the list of exceptions raised when making the request.
+
+        :rtype: list(Exception)
+
+        """
+        return self._exceptions
+
+    @property
+    def headers(self):
+        """Return the HTTP Response headers as a dict.
+
+        :rtype: dict
+
+        """
+        if not self._responses:
+            return None
+        return dict(self._responses[-1].headers)
+
+    @property
+    def history(self):
+        """Return all of the HTTP responses for the request.
+
+        :rtype: list(tornado.httpclient.HTTPResponse)
+
+        """
+        return self._responses
+
+    @property
+    def links(self):
+        """Return the parsed link header if it was set, returning a list of
+        the links as a dict.
+
+        :rtype: list(dict()) or None
+
+        """
+        if not self._responses:
+            return None
+        if 'Link' in self._responses[-1].headers:
+            links = []
+            for l in headers.parse_link(self._responses[-1].headers['Link']):
+                link = {'target': l.target}
+                link.update({k: v for (k, v) in l.parameters})
+                links.append(link)
+            return links
+
+    @property
+    def ok(self):
+        """Returns `True` if the response status code was between 200 and 399.
+        Returns `False` if no responses were received or the response status
+        code was >= 400.
+
+        :rtype bool
+
+        """
+        if not self._responses:
+            return False
+        return 200 <= self._responses[-1].code < 400
+
+    @property
+    def raw(self):
+        """Return the raw tornado HTTP Response object
+
+        :rtype: tornado.httpclient.HTTPResponse
+
+        """
+        if not self._responses:
+            return None
+        return self._responses[-1]
+
+    def _decode(self, value):
+        """Decode bytes to UTF-8 strings as a singe value, list, or dict.
+
+        :param mixed value: The value to decode
+        :rtype: mixed
+
+        """
+        if isinstance(value, list):
+            return [self._decode(v) for v in value]
+        elif isinstance(value, dict):
+            return {self._decode(k): self._decode(v)
+                    for k, v in value.items()}
+        elif isinstance(value, bytes):
+            return value.decode('utf-8')
+        return value
+
+    def _deserialize(self):
+        """Try and deserialize a response body based upon the specified
+        content type.
+
+        :rtype: mixed
+
+        """
+        if not self._responses or not self._responses[-1].body:
+            return None
+        if 'Content-Type' not in self._responses[-1].headers:
+            return self._responses[-1].body
+        try:
+            content_type = algorithms.select_content_type(
+                [headers.parse_content_type(
+                    self._responses[-1].headers['Content-Type'])],
+                AVAILABLE_CONTENT_TYPES)
+        except errors.NoMatch:
+            return self._responses[-1].body
+
+        if content_type[0] == CONTENT_TYPE_JSON:
+            return self._decode(
+                self._json.loads(self._decode(self._responses[-1].body)))
+        elif content_type[0] == CONTENT_TYPE_MSGPACK:  # pragma: nocover
+            return self._decode(
+                self._msgpack.unpackb(self._responses[-1].body))
+
+    def _error_message(self):
+        """Try and extract the error message from a HTTP error response.
+
+        :rtype: str
+
+        """
+        body = self._deserialize()
+        return body.get('message', body) if isinstance(body, dict) else body
 
 
 class HTTPClientMixin:
@@ -57,7 +248,6 @@ class HTTPClientMixin:
     :py:meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` method.
 
     """
-    AVAILABLE_CONTENT_TYPES = [CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK]
 
     DEFAULT_CONNECT_TIMEOUT = 10
     DEFAULT_REQUEST_TIMEOUT = 60
@@ -67,8 +257,8 @@ class HTTPClientMixin:
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__json_transcoder = transcoders.JSONTranscoder()
-        self.__msgpack_transcoder = transcoders.MsgPackTranscoder()
+        self.__hcm_json = transcoders.JSONTranscoder()
+        self.__hcm_msgpack = transcoders.MsgPackTranscoder()
 
     async def http_fetch(self, url,
                          method='GET',
@@ -84,7 +274,8 @@ class HTTPClientMixin:
                          auth_password=None,
                          user_agent=None,
                          validate_cert=True,
-                         allow_nonstandard_methods=False):
+                         allow_nonstandard_methods=False,
+                         dont_retry=None):
         """Perform a HTTP request
 
         Will retry up to ``self.MAX_HTTP_RETRIES`` times.
@@ -114,16 +305,22 @@ class HTTPClientMixin:
             certificate? Default is True
         :param bool allow_nonstandard_methods: Allow methods that don't adhere
             to the HTTP spec.
+        :param set dont_retry: A list of status codes that will not be retried
+            if an error is returned. Default: set({})
         :rtype: HTTPResponse
 
         """
-        response, history, links, start_time = None, [], [], time.time()
+        response = HTTPResponse()
 
         request_headers = self._http_req_apply_default_headers(
             request_headers, content_type, body)
+
         if body:
             body = self._http_req_body_serialize(
                 body, request_headers['Content-Type'])
+
+        if not dont_retry:
+            dont_retry = set({})
 
         client = httpclient.AsyncHTTPClient()
 
@@ -135,8 +332,10 @@ class HTTPClientMixin:
             LOGGER.debug('%s %s (Attempt %i of %i) %r',
                          method, url, attempt + 1, max_http_attempts,
                          request_headers)
+            if attempt > 0:
+                request_headers['X-Retry-Attempt'] = str(attempt + 1)
             try:
-                response = await client.fetch(
+                resp = await client.fetch(
                     url,
                     method=method,
                     headers=request_headers,
@@ -152,61 +351,40 @@ class HTTPClientMixin:
                     validate_cert=validate_cert,
                     allow_nonstandard_methods=allow_nonstandard_methods)
             except (OSError, socket.gaierror, CurlError) as error:
+                response.append_exception(error)
                 LOGGER.warning(
                     'HTTP Request Error for %s to %s attempt %i of %i: %s',
                     method, url, attempt + 1, max_http_attempts, error)
                 continue
 
             # Keep track of each response
-            history.append(response)
+            response.append_response(resp)
 
-            # Parse the Link header if present
-            if 'Link' in response.headers:
-                links = headers.parse_link(response.headers['Link'])
-
-            warning_header = response.headers.get('Warning')
-            if warning_header is not None:
-                LOGGER.warning('HTTP Warning Header for %s to %s, '
-                               'attempt %i of %i (%s): %s',
-                               method, url, response.code, attempt + 1,
-                               max_http_attempts, warning_header)
-
-            if 200 <= response.code < 400:
-                return HTTPResponse(
-                    True, response.code, dict(response.headers),
-                    self._http_resp_deserialize(response),
-                    response, attempt + 1, time.time() - start_time,
-                    links, history)
-            elif response.code in {423, 429}:
-                await self._http_resp_rate_limited(response)
-            elif 400 <= response.code < 500:
-                error = self._http_resp_error_message(response)
+            # If the response is ok, finish and exit
+            if response.ok:
+                response.finish()
+                return response
+            elif resp.code in dont_retry:
+                break
+            elif resp.code in {423, 429}:
+                await self._http_resp_rate_limited(resp)
+            elif resp.code < 500:
                 LOGGER.debug('HTTP Response Error for %s to %s'
                              'attempt %i of %i (%s): %s',
-                             method, url, response.code, attempt + 1,
-                             max_http_attempts, error)
-                return HTTPResponse(
-                    False, response.code, dict(response.headers),
-                    error, response, attempt + 1,
-                    time.time() - start_time, links, history)
-            else:
-                LOGGER.warning(
-                    'HTTP Response Error for %s to %s, '
-                    'attempt %i of %i (%s): %s',
-                    method, url, attempt + 1, max_http_attempts, response.code,
-                    self._http_resp_error_message(response))
+                             method, url, resp.code, attempt + 1,
+                             max_http_attempts, response.body)
+                response.finish()
+                return response
 
-        LOGGER.warning('HTTP Get %s failed after %i attempts', url,
+            LOGGER.warning(
+                'HTTP Error for %s to %s, attempt %i of %i (%s): %s',
+                method, url, attempt + 1, max_http_attempts, resp.code,
+                response.body)
+
+        LOGGER.warning('HTTP %s to %s failed after %i attempts', method, url,
                        max_http_attempts)
-        if response:
-            return HTTPResponse(
-                False, response.code, dict(response.headers),
-                self._http_resp_error_message(response) or response.body,
-                response, max_http_attempts,
-                time.time() - start_time, links, history)
-        return HTTPResponse(
-            False, 599, None, None, None, max_http_attempts,
-            time.time() - start_time, links, history)
+        response.finish()
+        return response
 
     def _http_req_apply_default_headers(self, request_headers,
                                         content_type, body):
@@ -223,15 +401,17 @@ class HTTPClientMixin:
         if not request_headers:
             request_headers = {}
         request_headers.setdefault(
-            'Accept', ', '.join([str(ctype) for ctype in
-                                 self.AVAILABLE_CONTENT_TYPES]))
+            'Accept', ', '.join([str(ct) for ct in AVAILABLE_CONTENT_TYPES]))
         if body:
             request_headers.setdefault(
                 'Content-Type', str(content_type) or str(CONTENT_TYPE_MSGPACK))
-        if hasattr(self, 'request'):
-            if self.request.headers.get('Correlation-Id'):
-                request_headers.setdefault(
-                    'Correlation-Id', self.request.headers['Correlation-Id'])
+        if hasattr(self, 'correlation_id'):
+            request_headers.setdefault(
+                'Correlation-Id', self.correlation_id)
+        elif hasattr(self, 'request') and \
+                self.request.headers.get('Correlation-Id'):
+            request_headers.setdefault(
+                'Correlation-Id', self.request.headers['Correlation-Id'])
         return request_headers
 
     def _http_req_body_serialize(self, body, content_type):
@@ -245,12 +425,11 @@ class HTTPClientMixin:
         """
         if not body or not isinstance(body, (dict, list)):
             return body
-
         content_type = headers.parse_content_type(content_type)
         if content_type == CONTENT_TYPE_JSON:
-            return self.__json_transcoder.dumps(body)
+            return self.__hcm_json.dumps(body)
         elif content_type == CONTENT_TYPE_MSGPACK:
-            return self.__msgpack_transcoder.packb(body)
+            return self.__hcm_msgpack.packb(body)
         raise ValueError('Unsupported Content Type')
 
     def _http_req_user_agent(self):
@@ -277,62 +456,6 @@ class HTTPClientMixin:
             except AttributeError:
                 pass
         return DEFAULT_USER_AGENT
-
-    def _http_resp_decode(self, value):
-        """Decode bytes to UTF-8 strings as a singe value, list, or dict.
-
-        :param mixed value:
-        :rtype: mixed
-        """
-        if isinstance(value, list):
-            return [self._http_resp_decode(v) for v in value]
-        elif isinstance(value, dict):
-            return {self._http_resp_decode(k): self._http_resp_decode(v)
-                    for k, v in value.items()}
-        elif isinstance(value, bytes):
-            return value.decode('utf-8')
-        return value
-
-    def _http_resp_deserialize(self, response):
-        """Try and deserialize a response body based upon the specified
-        content type.
-
-        :param tornado.httpclient.HTTPResponse: The HTTP response to decode
-        :rtype: mixed
-
-        """
-        if not response.body:
-            return None
-        if 'Content-Type' not in response.headers:
-            return response.body
-        try:
-            content_type = algorithms.select_content_type(
-                [headers.parse_content_type(response.headers['Content-Type'])],
-                self.AVAILABLE_CONTENT_TYPES)
-        except errors.NoMatch:
-            return response.body
-
-        if content_type[0] == CONTENT_TYPE_JSON:
-            return self._http_resp_decode(
-                self.__json_transcoder.loads(
-                    self._http_resp_decode(response.body)
-                )
-            )
-        elif content_type[0] == CONTENT_TYPE_MSGPACK:  # pragma: nocover
-            return self._http_resp_decode(
-                self.__msgpack_transcoder.unpackb(response.body))
-
-    def _http_resp_error_message(self, response):
-        """Try and extract the error message from a HTTP error response.
-
-        :param tornado.httpclient.HTTPResponse response: The response
-        :rtype: str
-
-        """
-        response_body = self._http_resp_deserialize(response)
-        if isinstance(response_body, dict) and 'message' in response_body:
-            return response_body['message']
-        return response_body
 
     @staticmethod
     def _http_resp_rate_limited(response):
