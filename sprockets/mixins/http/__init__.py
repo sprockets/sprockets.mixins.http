@@ -21,7 +21,7 @@ try:
 except ModuleNotFoundError:
     CurlError = OSError
 
-__version__ = '1.1.2'
+__version__ = '1.2.0'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,10 +29,10 @@ CONTENT_TYPE_JSON = headers.parse_content_type('application/json')
 CONTENT_TYPE_MSGPACK = headers.parse_content_type('application/msgpack')
 DEFAULT_USER_AGENT = 'sprockets.mixins.http/{}'.format(__version__)
 
-
 HTTPResponse = collections.namedtuple(
     'HTTPResponse',
-    ['ok', 'code', 'headers', 'body', 'raw', 'attempts', 'duration'])
+    ['ok', 'code', 'headers', 'body', 'raw', 'attempts', 'duration',
+     'links', 'history'])
 """Response in the form of a :class:`~collections.namedtuple` returned from
 :meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` that provides a
 slightly higher level of functionality than Tornado's
@@ -46,6 +46,8 @@ slightly higher level of functionality than Tornado's
     response object for the request
 :param int attempts: The number of HTTP request attempts made
 :param float duration: The total duration of time spent making the request(s)
+:param list links: A list of parsed link headers, if provided in response
+:param list history: A list of all responses returned as part of a request
 
 """
 
@@ -108,12 +110,14 @@ class HTTPClientMixin:
         :param str user_agent: The str used for the ``User-Agent`` header,
             default used if unspecified.
         :param bool validate_cert: For HTTPS requests, validate the server's
-            certifacte? Default is True
+            certificate? Default is True
         :param bool allow_nonstandard_methods: Allow methods that don't adhere
             to the HTTP spec.
         :rtype: HTTPResponse
 
         """
+        response, history, links, start_time = None, [], [], time.time()
+
         request_headers = self._http_req_apply_default_headers(
             request_headers, content_type, body)
         if body:
@@ -126,7 +130,6 @@ class HTTPClientMixin:
         if hasattr(client, 'max_clients') and os.getenv('HTTP_MAX_CLIENTS'):
             client.max_clients = int(os.getenv('HTTP_MAX_CLIENTS'))
 
-        response, start_time = None, time.time()
         for attempt in range(0, max_http_attempts):
             LOGGER.debug('%s %s (Attempt %i of %i) %r',
                          method, url, attempt + 1, max_http_attempts,
@@ -148,22 +151,31 @@ class HTTPClientMixin:
                     validate_cert=validate_cert,
                     allow_nonstandard_methods=allow_nonstandard_methods)
             except (OSError, socket.gaierror, CurlError) as error:
-                LOGGER.debug('HTTP Request Error for %s to %s'
-                             'attempt %i of %i: %s',
-                             method, url, attempt + 1,
-                             max_http_attempts, error)
+                LOGGER.warning(
+                    'HTTP Request Error for %s to %s attempt %i of %i: %s',
+                    method, url, attempt + 1, max_http_attempts, error)
                 continue
+
+            # Keep track of each response
+            history.append(response)
+
+            # Parse the Link header if present
+            if 'Link' in response.headers:
+                links = headers.parse_link(response.headers['Link'])
+
             warning_header = response.headers.get('Warning')
             if warning_header is not None:
                 LOGGER.warning('HTTP Warning Header for %s to %s, '
                                'attempt %i of %i (%s): %s',
                                method, url, response.code, attempt + 1,
                                max_http_attempts, warning_header)
+
             if 200 <= response.code < 400:
                 return HTTPResponse(
                         True, response.code, dict(response.headers),
                         self._http_resp_deserialize(response),
-                        response, attempt + 1, time.time() - start_time)
+                        response, attempt + 1, time.time() - start_time,
+                        links, history)
             elif response.code in {423, 429}:
                 await self._http_resp_rate_limited(response)
             elif 400 <= response.code < 500:
@@ -175,13 +187,13 @@ class HTTPClientMixin:
                 return HTTPResponse(
                         False, response.code, dict(response.headers),
                         error, response, attempt + 1,
-                        time.time() - start_time)
-            elif response.code >= 500:
-                LOGGER.error('HTTP Response Error for %s to %s, '
-                             'attempt %i of %i (%s): %s',
-                             method, url, attempt + 1, max_http_attempts,
-                             response.code,
-                             self._http_resp_error_message(response))
+                        time.time() - start_time, links, history)
+            else:
+                LOGGER.warning(
+                    'HTTP Response Error for %s to %s, '
+                    'attempt %i of %i (%s): %s',
+                    method, url, attempt + 1, max_http_attempts, response.code,
+                    self._http_resp_error_message(response))
 
         LOGGER.warning('HTTP Get %s failed after %i attempts', url,
                        max_http_attempts)
@@ -190,10 +202,10 @@ class HTTPClientMixin:
                     False, response.code, dict(response.headers),
                     self._http_resp_error_message(response) or response.body,
                     response, max_http_attempts,
-                    time.time() - start_time)
+                    time.time() - start_time, links, history)
         return HTTPResponse(
                 False, 599, None, None, None, max_http_attempts,
-                time.time() - start_time)
+                time.time() - start_time, links, history)
 
     def _http_req_apply_default_headers(self, request_headers,
                                         content_type, body):
@@ -243,17 +255,26 @@ class HTTPClientMixin:
     def _http_req_user_agent(self):
         """Return the User-Agent value to specify in HTTP requests, defaulting
         to ``service/version`` if configured in the application settings,
-        otherwise defaulting to ``sprockets.mixins.http/[VERSION]``.
+        or if used in a consumer, it will attempt to obtain a user-agent from
+        the consumer's process. If it can not auto-set the User-Agent, it
+        defaults to ``sprockets.mixins.http/[VERSION]``.
 
         :rtype: str
 
         """
-        if hasattr(self, 'application'):
-            if self.application.settings.get('service') and \
-                    self.application.settings.get('version'):
-                return '{}/{}'.format(
-                    self.application.settings['service'],
-                    self.application.settings['version'])
+        # Tornado Request Handler
+        try:
+            return '{}/{}'.format(
+                self.settings['service'], self.settings['version'])
+        except (AttributeError, KeyError):
+            pass
+
+        # Rejected Consumer
+        if hasattr(self, 'name') and hasattr(self, 'process'):
+            try:
+                return '{}/{}'.format(self.name, self.process.consumer_version)
+            except AttributeError:
+                pass
         return DEFAULT_USER_AGENT
 
     def _http_resp_decode(self, value):
@@ -297,7 +318,7 @@ class HTTPClientMixin:
                     self._http_resp_decode(response.body)
                 )
             )
-        elif content_type[0] == CONTENT_TYPE_MSGPACK:
+        elif content_type[0] == CONTENT_TYPE_MSGPACK:  # pragma: nocover
             return self._http_resp_decode(
                 self.__msgpack_transcoder.unpackb(response.body))
 

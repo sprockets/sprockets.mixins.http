@@ -2,9 +2,7 @@ import io
 import json
 import logging
 import os
-import sys
 from unittest import mock
-import unittest
 import uuid
 
 from tornado import httpclient, httputil, testing, web
@@ -83,8 +81,13 @@ class TestHandler(web.RequestHandler):
                 'traceback': None})
         else:
             body = self.get_request_body()
-            if isinstance(body, dict) and 'response' in body:
-                return self.send_response(body['response'])
+            if isinstance(body, dict):
+                if 'link' in body:
+                    self.add_header('Link', body['link'])
+                if 'warning' in body:
+                    self.add_header('Warning', body['warning'])
+                if 'response' in body:
+                    return self.send_response(body['response'])
             self.send_response({'headers': dict(self.request.headers),
                                 'path': self.request.path,
                                 'args': self.request.arguments,
@@ -124,12 +127,54 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
     def create_mixin(self, add_correlation=True):
         mixin = http.HTTPClientMixin()
         mixin.application = self._app
+        mixin.settings = self._app.settings
         mixin.request = httputil.HTTPServerRequest(
             'GET', 'http://test:9999/test',
             headers=httputil.HTTPHeaders(
                 {'Correlation-ID': self.correlation_id} if
                 add_correlation else {}))
         return mixin
+
+    @testing.gen_test()
+    def test_consumer_user_agent(self):
+
+        class Process:
+            def __init__(self):
+                self.consumer_version = '1.1.1'
+
+        class Consumer(http.HTTPClientMixin):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.name = 'consumer'
+                self.process = Process()
+
+        consumer = Consumer()
+        response = yield consumer.http_fetch(
+            self.get_url('/test?foo=bar&status_code=200'))
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(
+            response.body['headers'].get('User-Agent'), 'consumer/1.1.1')
+
+    @testing.gen_test()
+    def test_consumer_user_agent_error(self):
+
+        class Consumer(http.HTTPClientMixin):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.name = 'consumer'
+                self.process = True
+
+        consumer = Consumer()
+        response = yield consumer.http_fetch(
+            self.get_url('/test?foo=bar&status_code=200'))
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(
+            response.body['headers'].get('User-Agent'),
+            'sprockets.mixins.http/{}'.format(http.__version__))
 
     @testing.gen_test()
     def test_default_user_agent(self):
@@ -348,6 +393,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             response.body['headers'].get('User-Agent'), 'test/0.1.0')
         self.assertDictEqual(response.body['body'],
                              {'foo': 'bar', 'status_code': 200})
+        self.assertEqual([r.code for r in response.history], [200])
 
     @testing.gen_test()
     def test_rate_limiting_behavior(self):
@@ -356,6 +402,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertFalse(response.ok)
         self.assertEqual(response.code, 429)
         self.assertEqual(response.attempts, 3)
+        self.assertEqual([r.code for r in response.history], [429, 429, 429])
 
     @testing.gen_test()
     def test_error_response(self):
@@ -417,17 +464,62 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(client.max_clients, 25)
 
     @testing.gen_test()
-    @unittest.skipUnless(sys.version_info >= (3, ),
-                         'StringIO requires Python 3')
     def test_missing_content_type(self):
         # Craft a response that lacks a Content-Type header.
         request = httpclient.HTTPRequest(
             self.get_url('/test?foo=bar&status_code=200'))
         response = httpclient.HTTPResponse(
             request, code=200, headers={},
-            buffer=io.StringIO('Do not try to deserialize me.'))
+            buffer=io.BytesIO(b'Do not try to deserialize me.'))
         # Try to deserialize that response. It should not raise an exception.
         try:
             self.mixin._http_resp_deserialize(response)
         except KeyError:
             self.fail('http_fetch raised KeyError!')
+
+    @testing.gen_test()
+    def test_get_link_header(self):
+        body = {'link': '<http://example.com/TheBook/chapter2>; '
+                'rel="previous"; '
+                'title="previous chapter"', 'status_code': 200}
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test'),
+            method='POST',
+            body=body,
+            request_headers={'Accept': 'application/msgpack',
+                             'Content-Type': 'application/msgpack'})
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body['headers'].get('Correlation-Id'),
+                         self.correlation_id)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(
+            response.body['headers'].get('User-Agent'), 'test/0.1.0')
+        self.assertDictEqual(response.body['body'], body)
+        self.assertEqual(
+            response.links[0].target, 'http://example.com/TheBook/chapter2')
+        self.assertDictEqual(
+            dict(response.links[0].parameters),
+            {'rel': 'previous', 'title': 'previous chapter'})
+
+    @testing.gen_test()
+    def test_get_warning_header(self):
+        body = {'warning': '110 anderson/1.3.37 "Response is stale"',
+                'status_code': 200}
+        with mock.patch.object(http.LOGGER, 'warning') as warning:
+            response = yield self.mixin.http_fetch(
+                self.get_url('/test'),
+                method='POST',
+                body=body,
+                request_headers={'Accept': 'application/msgpack',
+                                 'Content-Type': 'application/msgpack'})
+            warning.assert_called_once()
+
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body['headers'].get('Correlation-Id'),
+                         self.correlation_id)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(
+            response.body['headers'].get('User-Agent'), 'test/0.1.0')
+        self.assertDictEqual(response.body['body'], body)

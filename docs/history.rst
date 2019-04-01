@@ -1,6 +1,17 @@
 Version History
 ===============
 
+`1.2.0`_ Apr 1, 2019
+--------------------
+- Add ``history`` attribute of the response with all response objects
+- Add ``links`` attribute of the response with the parsed link header if set
+- Change logging level in a few places to a more appropriate level
+- Add support for rejected consumers when auto-creating the ``User-Agent`` header
+- Add the netloc of a request to the log entry created when rate limited
+- Use RequestHandler.settings instead of RequestHandler.application.settings
+  when auto-creating the ``User-Agent`` header for a Tornado request handler
+- Add test coverage of the Warning response header behavior
+
 `1.1.1`_ Jan 9, 2019
 --------------------
 - Fix failure when response lacks Content-Type header
