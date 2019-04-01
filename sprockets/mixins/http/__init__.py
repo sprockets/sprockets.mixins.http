@@ -455,9 +455,10 @@ class HTTPClientMixin:
             pass
 
         # Rejected Consumer
-        if hasattr(self, 'name') and hasattr(self, 'process'):
+        if hasattr(self, 'process'):
             try:
-                return '{}/{}'.format(self.name, self.process.consumer_version)
+                return '{}/{}'.format(
+                    self.process.consumer_name, self.process.consumer_version)
             except AttributeError:
                 pass
         return DEFAULT_USER_AGENT

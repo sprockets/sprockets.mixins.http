@@ -141,12 +141,12 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
 
         class Process:
             def __init__(self):
+                self.consumer_name = 'consumer'
                 self.consumer_version = '1.1.1'
 
         class Consumer(http.HTTPClientMixin):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.name = 'consumer'
                 self.process = Process()
 
         consumer = Consumer()
