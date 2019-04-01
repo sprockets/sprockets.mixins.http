@@ -16,6 +16,10 @@ from urllib import parse
 from ietfparse import algorithms, errors, headers
 from sprockets.mixins.mediatype import transcoders
 from tornado import httpclient
+try:
+    from tornado.curl_httpclient import CurlError
+except ModuleNotFoundError:
+    CurlError = OSError
 
 __version__ = '1.1.2'
 
@@ -143,7 +147,7 @@ class HTTPClientMixin:
                     raise_error=False,
                     validate_cert=validate_cert,
                     allow_nonstandard_methods=allow_nonstandard_methods)
-            except (OSError, socket.gaierror) as error:
+            except (OSError, socket.gaierror, CurlError) as error:
                 LOGGER.debug('HTTP Request Error for %s to %s'
                              'attempt %i of %i: %s',
                              method, url, attempt + 1,
