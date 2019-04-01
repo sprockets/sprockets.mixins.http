@@ -21,7 +21,7 @@ try:
 except ModuleNotFoundError:
     CurlError = OSError
 
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -455,10 +455,11 @@ class HTTPClientMixin:
             pass
 
         # Rejected Consumer
-        if hasattr(self, 'process'):
+        if hasattr(self, '_process'):
             try:
                 return '{}/{}'.format(
-                    self.process.consumer_name, self.process.consumer_version)
+                    self._process.consumer_name,
+                    self._process.consumer_version)
             except AttributeError:
                 pass
         return DEFAULT_USER_AGENT

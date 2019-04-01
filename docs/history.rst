@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`2.0.1`_ Apr 1, 2019
+--------------------
+- Fix a bug with the rejected consumer User-Agent behavior
+
 `2.0.0`_ Apr 1, 2019
 --------------------
 - Refactor the HTTPResponse to a stand-alone class
@@ -66,6 +70,8 @@ Version History
 ---------------------
 - Initial Version
 
+.. _2.0.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.0.0...2.0.1
+.. _2.0.0: https://github.com/sprockets/sprockets.mixins.http/compare/1.1.1...2.0.0
 .. _1.1.1: https://github.com/sprockets/sprockets.mixins.http/compare/1.1.0...1.1.1
 .. _1.1.0: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.9...1.1.0
 .. _1.0.9: https://github.com/sprockets/sprockets.mixins.http/compare/1.0.8...1.0.9

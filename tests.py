@@ -147,7 +147,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         class Consumer(http.HTTPClientMixin):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.process = Process()
+                self._process = Process()
 
         consumer = Consumer()
         response = yield consumer.http_fetch(
@@ -161,11 +161,14 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
     @testing.gen_test
     def test_consumer_user_agent_error(self):
 
+        class Process:
+            def __init__(self):
+                self.consumer_name = 'consumer'
+
         class Consumer(http.HTTPClientMixin):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.name = 'consumer'
-                self.process = True
+                self._process = True
 
         consumer = Consumer()
         response = yield consumer.http_fetch(
