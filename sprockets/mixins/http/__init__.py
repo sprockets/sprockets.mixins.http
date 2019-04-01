@@ -11,12 +11,13 @@ import logging
 import os
 import socket
 import time
+from urllib import parse
 
 from ietfparse import algorithms, errors, headers
 from sprockets.mixins.mediatype import transcoders
 from tornado import httpclient
 
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -317,6 +318,8 @@ class HTTPClientMixin:
         :rtype: tornado.concurrent.Future
 
         """
+        parsed = parse.urlparse(response.request.url)
         duration = int(response.headers.get('Retry-After', 3))
-        LOGGER.warning('Rate Limited by, retrying in %i seconds', duration)
+        LOGGER.warning('Rate Limited by %s, retrying in %i seconds',
+                       parsed.netloc, duration)
         return asyncio.sleep(duration)
