@@ -6,6 +6,7 @@ requests.
 
 """
 import asyncio
+import functools
 import logging
 import os
 import socket
@@ -89,6 +90,7 @@ class HTTPResponse:
         return len(self)
 
     @property
+    @functools.lru_cache(1)
     def body(self):
         """Returns the HTTP response body, deserialized if possible.
 
