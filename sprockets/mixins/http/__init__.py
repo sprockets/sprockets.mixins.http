@@ -350,7 +350,10 @@ class HTTPClientMixin:
                     raise_error=False,
                     validate_cert=validate_cert,
                     allow_nonstandard_methods=allow_nonstandard_methods)
-            except (OSError, socket.gaierror, CurlError) as error:
+            except (ConnectionError,
+                    CurlError,
+                    OSError,
+                    socket.gaierror) as error:
                 response.append_exception(error)
                 LOGGER.warning(
                     'HTTP Request Error for %s to %s attempt %i of %i: %s',
