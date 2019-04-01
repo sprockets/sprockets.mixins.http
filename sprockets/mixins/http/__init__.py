@@ -53,9 +53,10 @@ slightly higher level of functionality than Tornado's
 
 
 class HTTPClientMixin:
-    """Mixin for making http requests. Requests using the asynchronous
-    :meth:`HTTPClientMixin.http_fetch` method """
+    """Mixin for making http requests using the asynchronous
+    :py:meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` method.
 
+    """
     AVAILABLE_CONTENT_TYPES = [CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK]
 
     DEFAULT_CONNECT_TIMEOUT = 10
@@ -94,8 +95,8 @@ class HTTPClientMixin:
         :param mixed body: The HTTP request body to send with the request
         :param content_type: The mime type to use for requests & responses.
             Defaults to ``application/msgpack``
-        :type content_type: :class:`~ietfparse.datastructures.ContentType` or
-            str
+        :type content_type: :py:class:`~ietfparse.datastructures.ContentType`
+            or str
         :param bool follow_redirects: Follow HTTP redirects when received
         :param int max_redirects: Maximum number of redirects to follow,
             default is 5
@@ -172,10 +173,10 @@ class HTTPClientMixin:
 
             if 200 <= response.code < 400:
                 return HTTPResponse(
-                        True, response.code, dict(response.headers),
-                        self._http_resp_deserialize(response),
-                        response, attempt + 1, time.time() - start_time,
-                        links, history)
+                    True, response.code, dict(response.headers),
+                    self._http_resp_deserialize(response),
+                    response, attempt + 1, time.time() - start_time,
+                    links, history)
             elif response.code in {423, 429}:
                 await self._http_resp_rate_limited(response)
             elif 400 <= response.code < 500:
@@ -185,9 +186,9 @@ class HTTPClientMixin:
                              method, url, response.code, attempt + 1,
                              max_http_attempts, error)
                 return HTTPResponse(
-                        False, response.code, dict(response.headers),
-                        error, response, attempt + 1,
-                        time.time() - start_time, links, history)
+                    False, response.code, dict(response.headers),
+                    error, response, attempt + 1,
+                    time.time() - start_time, links, history)
             else:
                 LOGGER.warning(
                     'HTTP Response Error for %s to %s, '
@@ -199,13 +200,13 @@ class HTTPClientMixin:
                        max_http_attempts)
         if response:
             return HTTPResponse(
-                    False, response.code, dict(response.headers),
-                    self._http_resp_error_message(response) or response.body,
-                    response, max_http_attempts,
-                    time.time() - start_time, links, history)
-        return HTTPResponse(
-                False, 599, None, None, None, max_http_attempts,
+                False, response.code, dict(response.headers),
+                self._http_resp_error_message(response) or response.body,
+                response, max_http_attempts,
                 time.time() - start_time, links, history)
+        return HTTPResponse(
+            False, 599, None, None, None, max_http_attempts,
+            time.time() - start_time, links, history)
 
     def _http_req_apply_default_headers(self, request_headers,
                                         content_type, body):

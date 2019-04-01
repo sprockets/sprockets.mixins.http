@@ -22,7 +22,7 @@ def decode(value):
     if isinstance(value, list):
         return [decode(v) for v in value]
     elif isinstance(value, dict):
-        return dict([(decode(k), decode(v)) for k, v in value.items()])
+        return {decode(k): decode(v) for k, v in value.items()}
     elif isinstance(value, bytes):
         return value.decode('utf-8')
     return value
@@ -434,11 +434,11 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
     def test_unsupported_accept(self):
         expectation = '<html>foo</html>'
         response = yield self.mixin.http_fetch(
-                self.get_url('/test?content_type=text/html'),
-                method='POST',
-                body={'response': expectation},
-                request_headers={'Accept': 'text/html',
-                                 'Content-Type': 'application/json'})
+            self.get_url('/test?content_type=text/html'),
+            method='POST',
+            body={'response': expectation},
+            request_headers={'Accept': 'text/html',
+                             'Content-Type': 'application/json'})
         self.assertTrue(response.ok)
         self.assertEqual(response.headers['Content-Type'], 'text/html')
         self.assertEqual(response.body.decode('utf-8'), expectation)
