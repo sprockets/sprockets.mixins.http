@@ -3,11 +3,11 @@ import json
 import logging
 import os
 import sys
+from unittest import mock
 import unittest
 import uuid
 
 from tornado import httpclient, httputil, testing, web
-import mock
 import umsgpack
 
 from sprockets.mixins import http
@@ -428,6 +428,6 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             buffer=io.StringIO('Do not try to deserialize me.'))
         # Try to deserialize that response. It should not raise an exception.
         try:
-            response_body = self.mixin._http_resp_deserialize(response)
+            self.mixin._http_resp_deserialize(response)
         except KeyError:
             self.fail('http_fetch raised KeyError!')
