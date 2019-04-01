@@ -34,9 +34,9 @@ HTTPResponse = collections.namedtuple(
     ['ok', 'code', 'headers', 'body', 'raw', 'attempts', 'duration',
      'links', 'history'])
 """Response in the form of a :class:`~collections.namedtuple` returned from
-:meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` that provides a
+:py:meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` that provides a
 slightly higher level of functionality than Tornado's
-:class:`tornado.httpclient.HTTPResponse` class.
+:py:class:`tornado.httpclient.HTTPResponse` class.
 
 :param bool ok: The response status code was between 200 and 308
 :param int code: The HTTP response status code
@@ -213,7 +213,7 @@ class HTTPClientMixin:
 
         :param dict request_headers: The HTTP request headers
         :param content_type: The mime-type used in the request/response
-        :type content_type: :class:`ietfparse.datastructures.ContentType`
+        :type content_type: :py:class:`ietfparse.datastructures.ContentType`
             or str
         :param mixed body: The request body
         :rtype: dict
@@ -286,9 +286,8 @@ class HTTPClientMixin:
         if isinstance(value, list):
             return [self._http_resp_decode(v) for v in value]
         elif isinstance(value, dict):
-            return dict([(self._http_resp_decode(k),
-                          self._http_resp_decode(v))
-                         for k, v in value.items()])
+            return {self._http_resp_decode(k): self._http_resp_decode(v)
+                    for k, v in value.items()}
         elif isinstance(value, bytes):
             return value.decode('utf-8')
         return value

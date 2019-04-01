@@ -5,10 +5,9 @@ import os
 from unittest import mock
 import uuid
 
+from sprockets.mixins import http
 from tornado import httpclient, httputil, testing, web
 import umsgpack
-
-from sprockets.mixins import http
 
 LOGGER = logging.getLogger(__name__)
 
