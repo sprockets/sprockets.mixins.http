@@ -1,6 +1,6 @@
 sprockets.mixins.http
 =====================
-HTTP Client Mixin for Tornado RequestHandlers. Automatically retries on errors, sleep when rate limited, and handles content encoding and decoding using `MsgPack <http://msgpack.org>`_ and JSON.
+HTTP Client Mixin for Tornado RequestHandlers. Automatically retries on errors, sleep when rate limited, and handles content encoding and decoding using `MsgPack <https://msgpack.org>`_ and JSON.
 
 |Version| |Travis| |CodeCov| |Docs|
 
@@ -15,7 +15,7 @@ and can be installed via ``pip`` or ``easy_install``:
    pip install sprockets.mixins.http
 
 If you would like to use `tornado.curl_httpclient.CurlAsyncHTTPClient`,
-you can install `pycurl <http://pycurl.io>`_ with:
+you can install `pycurl <https://pycurl.io>`_ with:
 
 .. code-block:: bash
 
@@ -23,12 +23,12 @@ you can install `pycurl <http://pycurl.io>`_ with:
 
 Documentation
 -------------
-http://pythonhosted.org/sprockets.mixins.http/
+https://pythonhosted.org/sprockets.mixins.http/
 
 Requirements
 ------------
-- `ietfparse <http://ietfparse.readthedocs.io>`_ >=1.5.1
-- `tornado <http://www.tornadoweb.org/>`_ >=5
+- `ietfparse <https://ietfparse.readthedocs.io>`_ >=1.5.1
+- `tornado <https://www.tornadoweb.org/>`_ >=5
 - `sprockets.mixins.metrics[msgpack] <https://sprocketsmixinsmetrics.readthedocs.io/>`_ >=3
 
 Example
@@ -96,13 +96,13 @@ License
 ``sprockets.mixins.http`` is released under the `3-Clause BSD license <https://github.com/sprockets/sprockets.mixins.http/blob/master/LICENSE>`_.
 
 .. |Version| image:: https://badge.fury.io/py/sprockets.mixins.http.svg?
-   :target: http://badge.fury.io/py/sprockets.mixins.http
+   :target: https://badge.fury.io/py/sprockets.mixins.http
 
 .. |Travis| image:: https://travis-ci.org/sprockets/sprockets.mixins.http.svg?branch=master
    :target: https://travis-ci.org/sprockets/sprockets.mixins.http
 
-.. |CodeCov| image:: http://codecov.io/github/sprockets/sprockets.mixins.http/coverage.svg?branch=master
+.. |CodeCov| image:: https://codecov.io/github/sprockets/sprockets.mixins.http/coverage.svg?branch=master
    :target: https://codecov.io/github/sprockets/sprockets.mixins.http?branch=master
 
 .. |Docs| image:: https://img.shields.io/badge/docs-pythonhosted-green.svg
-   :target: http://pythonhosted.org/sprockets.mixins.http/
+   :target: https://pythonhosted.org/sprockets.mixins.http/
