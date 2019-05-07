@@ -557,3 +557,19 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, 429)
         self.assertEqual(response.attempts, 1)
         self.assertEqual([r.code for r in response.history], [429])
+
+    @testing.gen_test
+    def test_str_url(self):
+        class MyURL:
+            def __init__(self, url):
+                self._url = url
+
+            def __str__(self):
+                return self._url
+
+        mixin = http.HTTPClientMixin()
+        response = yield mixin.http_fetch(
+            MyURL(self.get_url('/test?foo=bar&status_code=200')))
+        self.assertTrue(response.ok)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.attempts, 1)

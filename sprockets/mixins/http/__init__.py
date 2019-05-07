@@ -338,7 +338,7 @@ class HTTPClientMixin:
                 request_headers['X-Retry-Attempt'] = str(attempt + 1)
             try:
                 resp = await client.fetch(
-                    url,
+                    str(url),
                     method=method,
                     headers=request_headers,
                     body=body,
