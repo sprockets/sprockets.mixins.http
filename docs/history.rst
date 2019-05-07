@@ -1,6 +1,11 @@
 Version History
 ===============
 
+`2.1.0`_ May 7, 2019
+--------------------
+- Cast the ``url`` parameter of ``http_fetch`` to a string.
+  Allows for native use of URL abstractions like `yarl <https://yarl.readthedocs.io/en/latest/>`_.
+
 `2.0.1`_ Apr 1, 2019
 --------------------
 - Fix a bug with the rejected consumer User-Agent behavior
@@ -70,6 +75,7 @@ Version History
 ---------------------
 - Initial Version
 
+.. _2.1.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.0.1...2.1.0
 .. _2.0.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.0.0...2.0.1
 .. _2.0.0: https://github.com/sprockets/sprockets.mixins.http/compare/1.1.1...2.0.0
 .. _1.1.1: https://github.com/sprockets/sprockets.mixins.http/compare/1.1.0...1.1.1
