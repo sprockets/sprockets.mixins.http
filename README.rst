@@ -29,7 +29,7 @@ Requirements
 ------------
 - `ietfparse <https://ietfparse.readthedocs.io>`_ >=1.5.1
 - `tornado <https://www.tornadoweb.org/>`_ >=5
-- `sprockets.mixins.metrics[msgpack] <https://sprocketsmixinsmetrics.readthedocs.io/>`_ >=3
+- `sprockets.mixins.mediatype[msgpack] <https://sprocketsmixinsmedia-type.readthedocs.io/>`_ >=3
 
 Example
 -------
