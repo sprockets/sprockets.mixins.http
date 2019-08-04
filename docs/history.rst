@@ -1,6 +1,11 @@
 Version History
 ===============
 
+`Next Release
+-------------
+- Fix documentation builds
+- Update documentation links to readthedocs.io
+
 `2.1.0`_ May 7, 2019
 --------------------
 - Cast the ``url`` parameter of ``http_fetch`` to a string.

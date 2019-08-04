@@ -23,7 +23,7 @@ you can install `pycurl <https://pycurl.io>`_ with:
 
 Documentation
 -------------
-https://pythonhosted.org/sprockets.mixins.http/
+https://sprocketsmixinshttp.readthedocs.io
 
 Requirements
 ------------
@@ -104,5 +104,5 @@ License
 .. |CodeCov| image:: https://codecov.io/github/sprockets/sprockets.mixins.http/coverage.svg?branch=master
    :target: https://codecov.io/github/sprockets/sprockets.mixins.http?branch=master
 
-.. |Docs| image:: https://img.shields.io/badge/docs-pythonhosted-green.svg
-   :target: https://pythonhosted.org/sprockets.mixins.http/
+.. |Docs| image:: https://img.shields.io/readthedocs/sprocketsmixinshttp
+   :target: https://sprocketsmixinshttp.readthedocs.io/
