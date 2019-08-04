@@ -20,12 +20,3 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/', None),
     'tornado': ('https://www.tornadoweb.org/en/stable/', None),
 }
-
-
-def no_namedtuple_attrib_docstring(app, objtype, name, member, keep, options):
-    if objtype == 'class' and name in http.HTTPResponse._fields:
-        return True
-
-
-def setup(app):
-    app.connect('autodoc-skip-member', no_namedtuple_attrib_docstring)

@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`Next Release
+-------------
+- Fix documentation builds
+
 `2.1.0`_ May 7, 2019
 --------------------
 - Cast the ``url`` parameter of ``http_fetch`` to a string.
