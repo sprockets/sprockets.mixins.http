@@ -3,6 +3,8 @@ Version History
 
 `Next Release
 -------------
+- Add handling of ``tornado.httpclient.HTTPTimeoutError`` and
+  ``tornado.httpclient.HTTPStreamClosedError`` exceptions
 - Fix documentation builds
 - Update documentation links to readthedocs.io
 

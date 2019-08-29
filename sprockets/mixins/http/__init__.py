@@ -9,17 +9,12 @@ import asyncio
 import functools
 import logging
 import os
-import socket
 import time
 from urllib import parse
 
 from ietfparse import algorithms, errors, headers
 from sprockets.mixins.mediatype import transcoders
 from tornado import httpclient
-try:
-    from tornado.curl_httpclient import CurlError
-except ModuleNotFoundError:
-    CurlError = OSError
 
 __version__ = '2.1.0'
 
@@ -352,10 +347,7 @@ class HTTPClientMixin:
                     raise_error=False,
                     validate_cert=validate_cert,
                     allow_nonstandard_methods=allow_nonstandard_methods)
-            except (ConnectionError,
-                    CurlError,
-                    OSError,
-                    socket.gaierror) as error:
+            except (OSError, httpclient.HTTPError) as error:
                 response.append_exception(error)
                 LOGGER.warning(
                     'HTTP Request Error for %s to %s attempt %i of %i: %s',
