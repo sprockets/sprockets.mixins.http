@@ -16,7 +16,7 @@ from ietfparse import algorithms, errors, headers
 from sprockets.mixins.mediatype import transcoders
 from tornado import httpclient
 
-__version__ = '2.1.0'
+__version__ = '2.2.0'
 
 LOGGER = logging.getLogger(__name__)
 

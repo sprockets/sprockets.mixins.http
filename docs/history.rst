@@ -1,8 +1,8 @@
 Version History
 ===============
 
-`Next Release
--------------
+`2.2.0`_ Aug 29, 2019
+---------------------
 - Add handling of ``tornado.httpclient.HTTPTimeoutError`` and
   ``tornado.httpclient.HTTPStreamClosedError`` exceptions
 - Fix documentation builds
@@ -82,6 +82,7 @@ Version History
 ---------------------
 - Initial Version
 
+.. _2.2.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.1.0...2.2.0
 .. _2.1.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.0.1...2.1.0
 .. _2.0.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.0.0...2.0.1
 .. _2.0.0: https://github.com/sprockets/sprockets.mixins.http/compare/1.1.1...2.0.0
