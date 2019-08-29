@@ -219,7 +219,24 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertIsNone(response.headers)
         self.assertIsNone(response.links)
         self.assertIsNone(response.raw)
-        self.assertTrue([isinstance(e, OSError) for e in response.exceptions])
+        for e in response.exceptions:
+            self.assertIsInstance(e, OSError)
+
+    @testing.gen_test
+    def test_tornado_httpclient_errors(self):
+        with mock.patch(
+                'tornado.httpclient.AsyncHTTPClient.fetch') as fetch:
+            fetch.side_effect = httpclient.HTTPError(599)
+            response = yield self.mixin.http_fetch(self.get_url('/test'))
+        self.assertFalse(response.ok)
+        self.assertEqual(response.code, 599)
+        self.assertEqual(response.attempts, 3)
+        self.assertIsNone(response.body)
+        self.assertIsNone(response.headers)
+        self.assertIsNone(response.links)
+        self.assertIsNone(response.raw)
+        for e in response.exceptions:
+            self.assertIsInstance(e, httpclient.HTTPError)
 
     @testing.gen_test
     def test_without_correlation_id_behavior(self):
