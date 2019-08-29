@@ -1,13 +1,13 @@
 coverage==4.5.4
 codecov==2.0.15
 flake8==3.7.8
-flake8-comprehensions==2.1.0
+flake8-comprehensions==2.2.0
 flake8-deprecated==1.3
 flake8-html==0.4.0
 flake8-import-order==0.18.1
 flake8-quotes==2.1.0
-flake8-rst-docstrings==0.0.10
+flake8-rst-docstrings==0.0.11
 flake8-tuple==0.4.0
 nose==1.3.7
-u-msgpack-python==2.5.1
+u-msgpack-python==2.5.2
 -r installation.txt
