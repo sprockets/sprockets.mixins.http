@@ -440,7 +440,9 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertFalse(response.ok)
         self.assertEqual(response.code, 400)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(response.body, 'Test Error')
+        self.assertEqual(
+            response.body,
+            {'message': 'Test Error', 'type': 'Test Error', 'traceback': None})
 
     @testing.gen_test
     def test_error_retry(self):

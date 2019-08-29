@@ -94,8 +94,6 @@ class HTTPResponse:
         """
         if not self._responses:
             return None
-        if self._responses[-1].code >= 400:
-            return self._error_message()
         return self._deserialize()
 
     @property
@@ -229,15 +227,6 @@ class HTTPResponse:
         elif content_type[0] == CONTENT_TYPE_MSGPACK:  # pragma: nocover
             return self._decode(
                 self._msgpack.unpackb(self._responses[-1].body))
-
-    def _error_message(self):
-        """Try and extract the error message from a HTTP error response.
-
-        :rtype: str
-
-        """
-        body = self._deserialize()
-        return body.get('message', body) if isinstance(body, dict) else body
 
 
 class HTTPClientMixin:

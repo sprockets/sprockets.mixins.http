@@ -1,6 +1,11 @@
 Version History
 ===============
 
+Next Release
+------------
+- Remove transformation of response body when response code >= 400 and the
+  deserialized body contains a ``message`` attribute.
+
 `2.2.0`_ Aug 29, 2019
 ---------------------
 - Add handling of ``tornado.httpclient.HTTPTimeoutError`` and
