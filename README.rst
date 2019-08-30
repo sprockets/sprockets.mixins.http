@@ -8,7 +8,7 @@ Installation
 ------------
 ``sprockets.mixins.http`` is available on the
 `Python Package Index <https://pypi.python.org/pypi/sprockets.mixins.http>`_
-and can be installed via ``pip`` or ``easy_install``:
+and can be installed via ``pip``:
 
 .. code-block:: bash
 
