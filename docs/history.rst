@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`2.2.1`_ Sep 20, 2019
+---------------------
+- Remove the lrucache on response body due to a bug in behavior
+
 `2.2.0`_ Aug 29, 2019
 ---------------------
 - Add handling of ``tornado.httpclient.HTTPTimeoutError`` and
