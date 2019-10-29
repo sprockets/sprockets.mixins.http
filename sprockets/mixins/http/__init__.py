@@ -259,7 +259,7 @@ class HTTPClientMixin:
                          method='GET',
                          request_headers=None,
                          body=None,
-                         content_type=None,
+                         content_type=CONTENT_TYPE_MSGPACK,
                          follow_redirects=False,
                          max_redirects=None,
                          connect_timeout=None,
@@ -314,7 +314,7 @@ class HTTPClientMixin:
         response = HTTPResponse()
 
         request_headers = self._http_req_apply_default_headers(
-            request_headers, content_type or CONTENT_TYPE_MSGPACK, body)
+            request_headers, content_type, body)
 
         if body:
             body = self._http_req_body_serialize(
