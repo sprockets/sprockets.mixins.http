@@ -261,10 +261,10 @@ class HTTPClientMixin:
                          body=None,
                          content_type=CONTENT_TYPE_MSGPACK,
                          follow_redirects=False,
-                         max_redirects=MAX_REDIRECTS,
-                         connect_timeout=DEFAULT_CONNECT_TIMEOUT,
-                         request_timeout=DEFAULT_REQUEST_TIMEOUT,
-                         max_http_attempts=MAX_HTTP_RETRIES,
+                         max_redirects=None,
+                         connect_timeout=None,
+                         request_timeout=None,
+                         max_http_attempts=None,
                          auth_username=None,
                          auth_password=None,
                          user_agent=None,
@@ -305,6 +305,12 @@ class HTTPClientMixin:
         :rtype: HTTPResponse
 
         """
+        # Apply default values for non-specified arguments
+        max_http_attempts = max_http_attempts or self.MAX_HTTP_RETRIES
+        max_redirects = max_redirects or self.MAX_REDIRECTS
+        connect_timeout = connect_timeout or self.DEFAULT_CONNECT_TIMEOUT
+        request_timeout = request_timeout or self.DEFAULT_REQUEST_TIMEOUT
+
         response = HTTPResponse()
 
         request_headers = self._http_req_apply_default_headers(

@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`2.2.2`_ Oct 29, 2019
+---------------------
+- Fix compile-time setting of default argument values in ``http_fetch``.
+
 `2.2.1`_ Sep 20, 2019
 ---------------------
 - Remove the lrucache on response body due to a bug in behavior
