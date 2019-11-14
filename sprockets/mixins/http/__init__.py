@@ -255,7 +255,7 @@ class HTTPClientMixin:
         super().__init__(*args, **kwargs)
         self.__hcm_json = transcoders.JSONTranscoder()
         self.__hcm_msgpack = transcoders.MsgPackTranscoder()
-        self.settings['simplify_error_response'] = False
+        self.simplify_error_response = False
 
     async def http_fetch(self, url,
                          method='GET',
@@ -313,7 +313,7 @@ class HTTPClientMixin:
         connect_timeout = connect_timeout or self.DEFAULT_CONNECT_TIMEOUT
         request_timeout = request_timeout or self.DEFAULT_REQUEST_TIMEOUT
 
-        response = HTTPResponse(simplify_error_response=self.settings['simplify_error_response'])
+        response = HTTPResponse(simplify_error_response=self.simplify_error_response)
 
         request_headers = self._http_req_apply_default_headers(
             request_headers, content_type, body)
