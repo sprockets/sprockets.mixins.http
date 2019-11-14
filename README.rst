@@ -86,8 +86,8 @@ Error Response Body
 -------------------
 
 For errors, the HTTPResponse object will include a complete body.
-To reduce error response bodies down to just the error message, a class that
-uses this mixin can set ``self.simplify_error_response = True``.
+To reduce error response bodies down to just the error message, users of this
+mixin can set ``self.simplify_error_response = True``.
 
 Environment Variables
 ---------------------
