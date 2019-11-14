@@ -82,6 +82,13 @@ As with Tornado, to use the curl client which has numerous benefits:
        app.listen(8000)
        ioloop.IOLoop.current().start()
 
+Error Response Body
+-------------------
+
+For errors, the HTTPResponse object will include a complete body.
+To reduce error response bodies down to just the error message, a class that
+uses this mixin can set ``self.simplify_error_response = True``.
+
 Environment Variables
 ---------------------
 
