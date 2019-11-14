@@ -1,6 +1,12 @@
 Version History
 ===============
 
+Next Release
+------------
+- Deprecated transformation of response body when response code >= 400 and the
+  deserialized body contains a ``message`` attribute.  This can be overridden
+  with the ``simplify_error_response_body`` option.
+
 `2.2.2`_ Oct 29, 2019
 ---------------------
 - Fix compile-time setting of default argument values in ``http_fetch``.
