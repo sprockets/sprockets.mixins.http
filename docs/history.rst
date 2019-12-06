@@ -3,9 +3,10 @@ Version History
 
 Next Release
 ------------
-- Deprecated transformation of response body when response code >= 400 and the
-  deserialized body contains a ``message`` attribute.  This can be overridden
-  with the ``simplify_error_response`` option.
+- Added an option to control response body transformation for errors, i.e. HTTP
+  status code >= 400.  By default, a JSON or otherwise structured response body
+  will be reduced down to its error ``message``.  That can be overridden by
+  setting ``simplify_error_response`` to False.
 
 `2.2.2`_ Oct 29, 2019
 ---------------------
