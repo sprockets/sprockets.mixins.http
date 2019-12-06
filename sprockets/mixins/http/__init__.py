@@ -31,14 +31,14 @@ class HTTPResponse:
 
     """
 
-    def __init__(self, simplify_error_response=False):
+    def __init__(self, simplify_error_response=True):
         self._exceptions = []
         self._finish = None
         self._json = transcoders.JSONTranscoder()
         self._msgpack = transcoders.MsgPackTranscoder()
         self._responses = []
         self._start = time.time()
-        self._simplify_error_response = simplify_error_response or False
+        self._simplify_error_response = simplify_error_response
 
     def __len__(self):
         """Return the length of the exception stack and response stack.
@@ -255,7 +255,7 @@ class HTTPClientMixin:
         super().__init__(*args, **kwargs)
         self.__hcm_json = transcoders.JSONTranscoder()
         self.__hcm_msgpack = transcoders.MsgPackTranscoder()
-        self.simplify_error_response = False
+        self.simplify_error_response = True
 
     async def http_fetch(self, url,
                          method='GET',
