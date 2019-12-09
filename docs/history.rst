@@ -1,6 +1,13 @@
 Version History
 ===============
 
+`2.3.0`_ Dec 9, 2019
+--------------------
+- Added an option to control response body transformation for errors, i.e. HTTP
+  status code >= 400.  By default, a JSON or otherwise structured response body
+  will be reduced down to its error ``message``.  That can be overridden by
+  setting ``simplify_error_response`` to False.
+
 `2.2.2`_ Oct 29, 2019
 ---------------------
 - Fix compile-time setting of default argument values in ``http_fetch``.
@@ -90,6 +97,8 @@ Version History
 ---------------------
 - Initial Version
 
+.. _2.3.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.2.1...2.3.0
+.. _2.2.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.2.0...2.2.1
 .. _2.2.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.1.0...2.2.0
 .. _2.1.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.0.1...2.1.0
 .. _2.0.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.0.0...2.0.1

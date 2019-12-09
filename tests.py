@@ -443,6 +443,18 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.body, 'Test Error')
 
     @testing.gen_test
+    def test_fancier_error_response(self):
+        self.mixin.simplify_error_response = False
+        response = yield self.mixin.http_fetch(
+            self.get_url('/error?status_code=400&message=Test%20Error'))
+        self.assertFalse(response.ok)
+        self.assertEqual(response.code, 400)
+        self.assertEqual(response.attempts, 1)
+        self.assertEqual(
+            response.body,
+            {'message': 'Test Error', 'type': 'Test Error', 'traceback': None})
+
+    @testing.gen_test
     def test_error_retry(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/error?status_code=502'))

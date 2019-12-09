@@ -15,7 +15,7 @@ from ietfparse import algorithms, errors, headers
 from sprockets.mixins.mediatype import transcoders
 from tornado import httpclient
 
-__version__ = '2.2.1'
+__version__ = '2.3.0'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,13 +31,14 @@ class HTTPResponse:
 
     """
 
-    def __init__(self):
+    def __init__(self, simplify_error_response=True):
         self._exceptions = []
         self._finish = None
         self._json = transcoders.JSONTranscoder()
         self._msgpack = transcoders.MsgPackTranscoder()
         self._responses = []
         self._start = time.time()
+        self._simplify_error_response = simplify_error_response
 
     def __len__(self):
         """Return the length of the exception stack and response stack.
@@ -92,7 +93,7 @@ class HTTPResponse:
         """
         if not self._responses:
             return None
-        if self._responses[-1].code >= 400:
+        if self._responses[-1].code >= 400 and self._simplify_error_response:
             return self._error_message()
         return self._deserialize()
 
@@ -254,6 +255,7 @@ class HTTPClientMixin:
         super().__init__(*args, **kwargs)
         self.__hcm_json = transcoders.JSONTranscoder()
         self.__hcm_msgpack = transcoders.MsgPackTranscoder()
+        self.simplify_error_response = True
 
     async def http_fetch(self, url,
                          method='GET',
@@ -311,7 +313,8 @@ class HTTPClientMixin:
         connect_timeout = connect_timeout or self.DEFAULT_CONNECT_TIMEOUT
         request_timeout = request_timeout or self.DEFAULT_REQUEST_TIMEOUT
 
-        response = HTTPResponse()
+        response = HTTPResponse(
+            simplify_error_response=self.simplify_error_response)
 
         request_headers = self._http_req_apply_default_headers(
             request_headers, content_type, body)

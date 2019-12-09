@@ -82,6 +82,23 @@ As with Tornado, to use the curl client which has numerous benefits:
        app.listen(8000)
        ioloop.IOLoop.current().start()
 
+Error Response Body
+-------------------
+
+For errors, i.e. a response with HTTP status code in the 400 range...
+
+The HTTPResponse object's body is reduced down to just the error message.
+That is this mixin's default behavior.
+
+For a JSON response body with Problem Details (RFC 7807), you may want more
+than just the error message.  To gain access to the complete, deserialized
+response body; a class that uses this mixin can set:
+
+.. code:: python
+
+    ``self.simplify_error_response = False``.
+
+
 Environment Variables
 ---------------------
 
