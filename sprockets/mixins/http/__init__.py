@@ -371,7 +371,8 @@ class HTTPClientMixin:
             elif resp.code in dont_retry:
                 break
             elif resp.code in {423, 429}:
-                await self._http_resp_rate_limited(resp)
+                await self._http_resp_rate_limited(
+                    resp, min(connect_timeout, request_timeout))
             elif resp.code < 500:
                 LOGGER.debug('HTTP Response Error for %s to %s'
                              'attempt %i of %i (%s): %s',
@@ -464,11 +465,13 @@ class HTTPClientMixin:
         return DEFAULT_USER_AGENT
 
     @staticmethod
-    def _http_resp_rate_limited(response):
+    def _http_resp_rate_limited(response, timeout=3.0):
         """Extract the ``Retry-After`` header value if the request was rate
         limited and return a future to sleep for the specified duration.
 
         :param tornado.httpclient.HTTPResponse response: The response
+        :param float timeout: Maximum number of seconds to wait regardless
+            of ``Retry-After`` header
         :rtype: tornado.concurrent.Future
 
         """
@@ -476,4 +479,4 @@ class HTTPClientMixin:
         duration = int(response.headers.get('Retry-After', 3))
         LOGGER.warning('Rate Limited by %s, retrying in %i seconds',
                        parsed.netloc, duration)
-        return asyncio.sleep(duration)
+        return asyncio.sleep(min(duration, timeout))
