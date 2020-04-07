@@ -96,7 +96,7 @@ response body; a class that uses this mixin can set:
 
 .. code:: python
 
-    ``self.simplify_error_response = False``.
+   self.simplify_error_response = False
 
 
 Environment Variables
