@@ -1,8 +1,8 @@
 Version History
 ===============
 
-Next Release
-------------
+`2.3.1`_ Apr 7, 2020
+--------------------
 - Address `#27`_ by using the shortest appropriate timeout
 
 .. _#27: https://github.com/sprockets/sprockets.mixins.http/issues/27
@@ -103,6 +103,7 @@ Next Release
 ---------------------
 - Initial Version
 
+.. _2.3.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.0...2.3.1
 .. _2.3.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.2.1...2.3.0
 .. _2.2.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.2.0...2.2.1
 .. _2.2.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.1.0...2.2.0
