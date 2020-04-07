@@ -1,6 +1,12 @@
 Version History
 ===============
 
+Next Release
+------------
+- Address `#27`_ by using the shortest appropriate timeout
+
+.. _#27: https://github.com/sprockets/sprockets.mixins.http/issues/27
+
 `2.3.0`_ Dec 9, 2019
 --------------------
 - Added an option to control response body transformation for errors, i.e. HTTP

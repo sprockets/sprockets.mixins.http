@@ -32,7 +32,8 @@ class TestHandler(web.RequestHandler):
     def prepare(self):
         status_code = self.status_code()
         if status_code == 429:
-            self.add_header('Retry-After', '1')
+            self.add_header('Retry-After',
+                            self.get_argument('retry_after', '1'))
             self.set_status(429, 'Rate Limited')
             self.finish()
         elif status_code in {502, 504}:
@@ -602,3 +603,15 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.attempts, 1)
+
+    @testing.gen_test
+    def test_with_obscene_retry_after(self):
+        response = yield self.mixin.http_fetch(
+            self.get_url('/error?status_code=429&retry_after=86400'),
+            max_http_attempts=2,
+            request_timeout=0.25,
+        )
+        self.assertFalse(response.ok)
+        self.assertAlmostEqual(response.duration,
+                               response.attempts * 0.25,
+                               places=1)
