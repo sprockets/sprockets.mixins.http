@@ -318,6 +318,18 @@ class HTTPClientMixin:
         max_redirects = max_redirects or self.MAX_REDIRECTS
         connect_timeout = connect_timeout or self.DEFAULT_CONNECT_TIMEOUT
         request_timeout = request_timeout or self.DEFAULT_REQUEST_TIMEOUT
+        kwargs.update({
+            'allow_nonstandard_methods': allow_nonstandard_methods,
+            'auth_password': auth_password,
+            'auth_username': auth_username,
+            'connect_timeout': connect_timeout,
+            'follow_redirects': follow_redirects,
+            'max_redirects': max_redirects,
+            'method': method,
+            'request_timeout': request_timeout,
+            'user_agent': user_agent or self._http_req_user_agent(),
+            'validate_cert': validate_cert,
+        })
 
         response = HTTPResponse(
             simplify_error_response=self.simplify_error_response)
@@ -353,19 +365,9 @@ class HTTPClientMixin:
             try:
                 resp = await client.fetch(
                     str(url),
-                    method=method,
                     headers=request_headers,
                     body=body,
-                    auth_username=auth_username,
-                    auth_password=auth_password,
-                    connect_timeout=connect_timeout,
-                    request_timeout=request_timeout,
-                    user_agent=user_agent or self._http_req_user_agent(),
-                    follow_redirects=follow_redirects,
-                    max_redirects=max_redirects,
                     raise_error=False,
-                    validate_cert=validate_cert,
-                    allow_nonstandard_methods=allow_nonstandard_methods,
                     **kwargs)
             except (OSError, httpclient.HTTPError) as error:
                 response.append_exception(error)
