@@ -272,7 +272,8 @@ class HTTPClientMixin:
                          user_agent=None,
                          validate_cert=True,
                          allow_nonstandard_methods=False,
-                         dont_retry=None):
+                         dont_retry=None,
+                         **kwargs):
         """Perform a HTTP request
 
         Will retry up to ``self.MAX_HTTP_RETRIES`` times.
@@ -304,6 +305,8 @@ class HTTPClientMixin:
             to the HTTP spec.
         :param set dont_retry: A list of status codes that will not be retried
             if an error is returned. Default: set({})
+        :param kwargs: additional keyword parameters are passed to
+            :meth:`tornado.httpclient.AsyncHTTPClient.fetch`
         :rtype: HTTPResponse
 
         """
@@ -353,7 +356,8 @@ class HTTPClientMixin:
                     max_redirects=max_redirects,
                     raise_error=False,
                     validate_cert=validate_cert,
-                    allow_nonstandard_methods=allow_nonstandard_methods)
+                    allow_nonstandard_methods=allow_nonstandard_methods,
+                    **kwargs)
             except (OSError, httpclient.HTTPError) as error:
                 response.append_exception(error)
                 LOGGER.warning(

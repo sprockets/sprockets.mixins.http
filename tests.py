@@ -615,3 +615,16 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertAlmostEqual(response.duration,
                                response.attempts * 0.25,
                                places=1)
+
+    @testing.gen_test
+    def test_that_kwargs_are_passed_through(self):
+        chunks = []
+
+        def streaming_callback(chunk):
+            chunks.append(chunk)
+
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test'),
+            streaming_callback=streaming_callback)
+        self.assertTrue(response.ok)
+        self.assertGreater(len(chunks), 0)
