@@ -309,6 +309,9 @@ class HTTPClientMixin:
             :meth:`tornado.httpclient.AsyncHTTPClient.fetch`
         :rtype: HTTPResponse
 
+        :raises: :exc:`RuntimeError` if the ``raise_error`` keyword argument
+            is specified
+
         """
         # Apply default values for non-specified arguments
         max_http_attempts = max_http_attempts or self.MAX_HTTP_RETRIES
@@ -334,6 +337,12 @@ class HTTPClientMixin:
         # Workaround for Tornado defect.
         if hasattr(client, 'max_clients') and os.getenv('HTTP_MAX_CLIENTS'):
             client.max_clients = int(os.getenv('HTTP_MAX_CLIENTS'))
+
+        # Fail hard if someone is doing something wrong
+        if 'raise_error' in kwargs:
+            raise RuntimeError(
+                self.__class__.__name__ + '.http_fetch called with ' +
+                'raise_error')
 
         for attempt in range(0, max_http_attempts):
             LOGGER.debug('%s %s (Attempt %i of %i) %r',

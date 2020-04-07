@@ -628,3 +628,11 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             streaming_callback=streaming_callback)
         self.assertTrue(response.ok)
         self.assertGreater(len(chunks), 0)
+
+    @testing.gen_test
+    def test_that_client_fails_if_raise_error_is_specified(self):
+        for value in (True, False, object()):
+            with self.assertRaises(RuntimeError, msg=str(value)):
+                yield self.mixin.http_fetch(
+                    self.get_url('/error?status_code=410'),
+                    raise_error=value)
