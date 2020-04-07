@@ -313,21 +313,29 @@ class HTTPClientMixin:
             is specified
 
         """
-        # Apply default values for non-specified arguments
-        max_http_attempts = max_http_attempts or self.MAX_HTTP_RETRIES
-        max_redirects = max_redirects or self.MAX_REDIRECTS
-        connect_timeout = connect_timeout or self.DEFAULT_CONNECT_TIMEOUT
-        request_timeout = request_timeout or self.DEFAULT_REQUEST_TIMEOUT
+        # Curry the request parameters through from our named params
+        def apply_default(val, default):
+            return default if val is None else val
+
+        # these are used elsewhere so we need them outside of kwargs
+        connect_timeout = apply_default(connect_timeout,
+                                        self.DEFAULT_CONNECT_TIMEOUT)
+        request_timeout = apply_default(request_timeout,
+                                        self.DEFAULT_REQUEST_TIMEOUT)
+        max_http_attempts = apply_default(max_http_attempts,
+                                          self.MAX_HTTP_RETRIES)
+
         kwargs.update({
             'allow_nonstandard_methods': allow_nonstandard_methods,
             'auth_password': auth_password,
             'auth_username': auth_username,
             'connect_timeout': connect_timeout,
             'follow_redirects': follow_redirects,
-            'max_redirects': max_redirects,
+            'max_redirects': apply_default(max_redirects, self.MAX_REDIRECTS),
             'method': method,
             'request_timeout': request_timeout,
-            'user_agent': user_agent or self._http_req_user_agent(),
+            'user_agent': apply_default(user_agent,
+                                        self._http_req_user_agent()),
             'validate_cert': validate_cert,
         })
 
