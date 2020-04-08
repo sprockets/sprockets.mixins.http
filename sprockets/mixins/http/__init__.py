@@ -360,9 +360,8 @@ class HTTPClientMixin:
 
         # Fail hard if someone is doing something wrong
         if 'raise_error' in kwargs:
-            raise RuntimeError(
-                self.__class__.__name__ + '.http_fetch called with ' +
-                'raise_error')
+            raise RuntimeError(self.__class__.__name__ + '.http_fetch '
+                               'called with raise_error')
 
         for attempt in range(0, max_http_attempts):
             LOGGER.debug('%s %s (Attempt %i of %i) %r',
