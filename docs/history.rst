@@ -1,6 +1,11 @@
 Version History
 ===============
 
+Next Release
+------------
+- Pass keyword parameters through to the underlying HTTPClient fetch method.
+  This enables niceties like streaming callback support
+
 `2.3.1`_ Apr 7, 2020
 --------------------
 - Address `#27`_ by using the shortest appropriate timeout

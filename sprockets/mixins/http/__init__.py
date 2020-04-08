@@ -272,7 +272,8 @@ class HTTPClientMixin:
                          user_agent=None,
                          validate_cert=True,
                          allow_nonstandard_methods=False,
-                         dont_retry=None):
+                         dont_retry=None,
+                         **kwargs):
         """Perform a HTTP request
 
         Will retry up to ``self.MAX_HTTP_RETRIES`` times.
@@ -304,14 +305,39 @@ class HTTPClientMixin:
             to the HTTP spec.
         :param set dont_retry: A list of status codes that will not be retried
             if an error is returned. Default: set({})
+        :param kwargs: additional keyword parameters are passed to
+            :meth:`tornado.httpclient.AsyncHTTPClient.fetch`
         :rtype: HTTPResponse
 
+        :raises: :exc:`RuntimeError` if the ``raise_error`` keyword argument
+            is specified
+
         """
-        # Apply default values for non-specified arguments
-        max_http_attempts = max_http_attempts or self.MAX_HTTP_RETRIES
-        max_redirects = max_redirects or self.MAX_REDIRECTS
-        connect_timeout = connect_timeout or self.DEFAULT_CONNECT_TIMEOUT
-        request_timeout = request_timeout or self.DEFAULT_REQUEST_TIMEOUT
+        # Curry the request parameters through from our named params
+        def apply_default(val, default):
+            return default if val is None else val
+
+        # these are used elsewhere so we need them outside of kwargs
+        connect_timeout = apply_default(connect_timeout,
+                                        self.DEFAULT_CONNECT_TIMEOUT)
+        request_timeout = apply_default(request_timeout,
+                                        self.DEFAULT_REQUEST_TIMEOUT)
+        max_http_attempts = apply_default(max_http_attempts,
+                                          self.MAX_HTTP_RETRIES)
+
+        kwargs.update({
+            'allow_nonstandard_methods': allow_nonstandard_methods,
+            'auth_password': auth_password,
+            'auth_username': auth_username,
+            'connect_timeout': connect_timeout,
+            'follow_redirects': follow_redirects,
+            'max_redirects': apply_default(max_redirects, self.MAX_REDIRECTS),
+            'method': method,
+            'request_timeout': request_timeout,
+            'user_agent': apply_default(user_agent,
+                                        self._http_req_user_agent()),
+            'validate_cert': validate_cert,
+        })
 
         response = HTTPResponse(
             simplify_error_response=self.simplify_error_response)
@@ -332,6 +358,12 @@ class HTTPClientMixin:
         if hasattr(client, 'max_clients') and os.getenv('HTTP_MAX_CLIENTS'):
             client.max_clients = int(os.getenv('HTTP_MAX_CLIENTS'))
 
+        # Fail hard if someone is doing something wrong
+        if 'raise_error' in kwargs:
+            raise RuntimeError(
+                self.__class__.__name__ + '.http_fetch called with ' +
+                'raise_error')
+
         for attempt in range(0, max_http_attempts):
             LOGGER.debug('%s %s (Attempt %i of %i) %r',
                          method, url, attempt + 1, max_http_attempts,
@@ -341,19 +373,10 @@ class HTTPClientMixin:
             try:
                 resp = await client.fetch(
                     str(url),
-                    method=method,
                     headers=request_headers,
                     body=body,
-                    auth_username=auth_username,
-                    auth_password=auth_password,
-                    connect_timeout=connect_timeout,
-                    request_timeout=request_timeout,
-                    user_agent=user_agent or self._http_req_user_agent(),
-                    follow_redirects=follow_redirects,
-                    max_redirects=max_redirects,
                     raise_error=False,
-                    validate_cert=validate_cert,
-                    allow_nonstandard_methods=allow_nonstandard_methods)
+                    **kwargs)
             except (OSError, httpclient.HTTPError) as error:
                 response.append_exception(error)
                 LOGGER.warning(
