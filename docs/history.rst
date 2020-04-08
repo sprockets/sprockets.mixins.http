@@ -1,7 +1,7 @@
 Version History
 ===============
 
-`2.3.2`_ Apr 8 2020
+`2.3.3`_ Apr 8 2020
 -------------------
 - Pass keyword parameters through to the underlying HTTPClient fetch method.
   This enables niceties like streaming callback support
@@ -105,7 +105,7 @@ Version History
 ---------------------
 - Initial Version
 
-.. _2.3.2: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.1...2.3.2
+.. _2.3.3: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.1...2.3.3
 .. _2.3.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.0...2.3.1
 .. _2.3.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.2.1...2.3.0
 .. _2.2.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.2.0...2.2.1
