@@ -345,7 +345,7 @@ class HTTPClientMixin:
         request_headers = self._http_req_apply_default_headers(
             request_headers, content_type, body)
 
-        if body:
+        if body is not None:
             body = self._http_req_body_serialize(
                 body, request_headers['Content-Type'])
 
@@ -450,7 +450,7 @@ class HTTPClientMixin:
         :raises: ValueError
 
         """
-        if not body or not isinstance(body, (dict, list)):
+        if body is None or not isinstance(body, (dict, list)):
             return body
         content_type = headers.parse_content_type(content_type)
         if content_type == CONTENT_TYPE_JSON:

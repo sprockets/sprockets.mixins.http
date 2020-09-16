@@ -614,7 +614,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertFalse(response.ok)
         self.assertAlmostEqual(response.duration,
                                response.attempts * 0.25,
-                               places=1)
+                               places=0)
 
     @testing.gen_test
     def test_that_kwargs_are_passed_through(self):
@@ -636,3 +636,17 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
                 yield self.mixin.http_fetch(
                     self.get_url('/error?status_code=410'),
                     raise_error=value)
+
+    @testing.gen_test
+    def test_that_empty_bodies_are_serialized(self):
+        response = yield self.mixin.http_fetch(
+            self.get_url('/'), method='POST', body={},
+            request_headers={'Content-Type': 'application/json'})
+        self.assertEqual(200, response.code)
+        self.assertEqual({}, response.body['body'])
+
+        response = yield self.mixin.http_fetch(
+            self.get_url('/'), method='POST', body=[],
+            request_headers={'Content-Type': 'application/json'})
+        self.assertEqual(200, response.code)
+        self.assertEqual([], response.body['body'])
