@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`Next Release`_
+---------------
+- Fix serialization of empty request bodies.
+
 `2.3.3`_ Apr 8 2020
 -------------------
 - Pass keyword parameters through to the underlying HTTPClient fetch method.
@@ -105,6 +109,7 @@ Version History
 ---------------------
 - Initial Version
 
+.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.3...master
 .. _2.3.3: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.1...2.3.3
 .. _2.3.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.0...2.3.1
 .. _2.3.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.2.1...2.3.0
