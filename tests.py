@@ -4,6 +4,7 @@ import os
 from unittest import mock
 import uuid
 
+import asynctest
 from sprockets.mixins import http
 from tornado import httpclient, httputil, testing, web
 import umsgpack
@@ -31,10 +32,10 @@ class TestHandler(web.RequestHandler):
 
     def prepare(self):
         status_code = self.status_code()
-        if status_code == 429:
+        if status_code in {423, 429}:
             self.add_header('Retry-After',
                             self.get_argument('retry_after', '1'))
-            self.set_status(429, 'Rate Limited')
+            self.set_status(status_code, 'Rate Limited')
             self.finish()
         elif status_code in {502, 504}:
             self.set_status(status_code)
@@ -427,12 +428,22 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
 
     @testing.gen_test
     def test_rate_limiting_behavior(self):
-        response = yield self.mixin.http_fetch(
-            self.get_url('/error?status_code=429'))
-        self.assertFalse(response.ok)
-        self.assertEqual(response.code, 429)
-        self.assertEqual(response.attempts, 3)
-        self.assertEqual([r.code for r in response.history], [429, 429, 429])
+        with asynctest.mock.patch(
+                'sprockets.mixins.http.asyncio') as aio_module:
+            aio_module.sleep = asynctest.CoroutineMock()
+            for rate_limit_code in {423, 429}:
+                response = yield self.mixin.http_fetch(
+                    self.get_url(f'/error?status_code={rate_limit_code}'
+                                 f'&retry_after=2'))
+                self.assertFalse(response.ok)
+                self.assertEqual(response.code, rate_limit_code)
+                self.assertEqual(response.attempts, 3)
+                self.assertEqual([r.code for r in response.history],
+                                 [rate_limit_code] * response.attempts)
+                self.assertEqual(aio_module.sleep.await_count, 3)
+                aio_module.sleep.assert_has_awaits([mock.call(2), mock.call(2),
+                                                    mock.call(2)])
+                aio_module.sleep.reset_mock()
 
     @testing.gen_test
     def test_error_response(self):
