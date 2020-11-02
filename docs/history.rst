@@ -4,6 +4,7 @@ Version History
 `Next Release`_
 ---------------
 - Fix serialization of empty request bodies.
+- Rate limit 503s as well as 423s and 429s.
 
 `2.3.3`_ Apr 8 2020
 -------------------

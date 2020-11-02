@@ -32,7 +32,7 @@ class TestHandler(web.RequestHandler):
 
     def prepare(self):
         status_code = self.status_code()
-        if status_code in {423, 429}:
+        if status_code in {423, 429, 503}:
             self.add_header('Retry-After',
                             self.get_argument('retry_after', '1'))
             self.set_status(status_code, 'Rate Limited')
@@ -431,7 +431,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         with asynctest.mock.patch(
                 'sprockets.mixins.http.asyncio') as aio_module:
             aio_module.sleep = asynctest.CoroutineMock()
-            for rate_limit_code in {423, 429}:
+            for rate_limit_code in {423, 429, 503}:
                 response = yield self.mixin.http_fetch(
                     self.get_url(f'/error?status_code={rate_limit_code}'
                                  f'&retry_after=2'))
