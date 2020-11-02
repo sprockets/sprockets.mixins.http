@@ -392,7 +392,7 @@ class HTTPClientMixin:
                 return response
             elif resp.code in dont_retry:
                 break
-            elif resp.code in {423, 429}:
+            elif resp.code in {423, 429, 503}:
                 await self._http_resp_rate_limited(
                     resp, min(connect_timeout, request_timeout))
             elif resp.code < 500:
