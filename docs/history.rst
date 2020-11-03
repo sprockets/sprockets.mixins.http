@@ -1,8 +1,8 @@
 Version History
 ===============
 
-`Next Release`_
----------------
+`2.4.0`_ Nov 3 2020
+-------------------
 - Fix serialization of empty request bodies.
 - Rate limit 503s as well as 423s and 429s.
 - Advertise & test support for Python 3.8 and 3.9.
@@ -111,7 +111,8 @@ Version History
 ---------------------
 - Initial Version
 
-.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.3...master
+.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.0...master
+.. _2.4.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.3...2.4.0
 .. _2.3.3: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.1...2.3.3
 .. _2.3.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.0...2.3.1
 .. _2.3.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.2.1...2.3.0
