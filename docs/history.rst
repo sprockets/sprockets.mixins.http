@@ -1,6 +1,10 @@
 Version History
 ===============
 
+`Next Release`_
+---------------
+- Make request retry timeout configurable
+
 `2.4.0`_ Nov 3 2020
 -------------------
 - Fix serialization of empty request bodies.
