@@ -31,13 +31,14 @@ def decode(value):
 class TestHandler(web.RequestHandler):
     def prepare(self):
         status_code = self.status_code()
+        reason = None
         if status_code in {423, 429, 503}:
-            self.add_header('Retry-After',
-                            self.get_argument('retry_after', '1'))
-            self.set_status(status_code, 'Rate Limited')
-            self.finish()
-        elif status_code in {502, 504}:
-            self.set_status(status_code)
+            reason = 'Rate Limited'
+        if self.get_query_argument('retry_after', None):
+            self.set_header('Retry-After',
+                            self.get_query_argument('retry_after'))
+        if status_code in {423, 429, 502, 503, 504}:
+            self.set_status(status_code, reason=reason)
             self.finish()
 
     def delete(self, *args, **kwargs):
@@ -136,6 +137,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         mixin = http.HTTPClientMixin()
         mixin.application = self._app
         mixin.settings = self._app.settings
+        mixin.DEFAULT_RETRY_TIMEOUT = 0.1
         mixin.request = httputil.HTTPServerRequest('GET',
                                                    'http://test:9999/test',
                                                    headers=headers)
@@ -164,10 +166,6 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
 
     @testing.gen_test
     def test_consumer_user_agent_error(self):
-        class Process:
-            def __init__(self):
-                self.consumer_name = 'consumer'
-
         class Consumer(http.HTTPClientMixin):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -473,23 +471,48 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual([r.code for r in response.history], [200])
 
     @testing.gen_test
-    def test_rate_limiting_behavior(self):
+    def test_rate_limiting_behavior_with_retry_after(self):
         with asynctest.mock.patch(
                 'sprockets.mixins.http.asyncio') as aio_module:
             aio_module.sleep = asynctest.CoroutineMock()
-            for rate_limit_code in {423, 429, 503}:
+            for rate_limit_code in {423, 429, 500, 503}:
                 response = yield self.mixin.http_fetch(
                     self.get_url(f'/error?status_code={rate_limit_code}'
                                  f'&retry_after=2'))
                 self.assertFalse(response.ok)
                 self.assertEqual(response.code, rate_limit_code)
-                self.assertEqual(response.attempts, 3)
-                self.assertEqual([r.code for r in response.history],
-                                 [rate_limit_code] * response.attempts)
-                self.assertEqual(aio_module.sleep.await_count, 3)
+                self.assertEqual(response.attempts,
+                                 self.mixin.MAX_HTTP_RETRIES)
+                self.assertEqual(
+                    [r.code for r in response.history],
+                    ([rate_limit_code] * self.mixin.MAX_HTTP_RETRIES))
+                self.assertEqual(aio_module.sleep.await_count,
+                                 self.mixin.MAX_HTTP_RETRIES - 1)
                 aio_module.sleep.assert_has_awaits(
-                    [mock.call(2), mock.call(2),
-                     mock.call(2)])
+                    ([mock.call(2)] * (self.mixin.MAX_HTTP_RETRIES - 1)))
+                aio_module.sleep.reset_mock()
+
+    @testing.gen_test
+    def test_rate_limiting_behavior_without_retry_after(self):
+        max_attempts = 5
+        with asynctest.mock.patch(
+                'sprockets.mixins.http.asyncio') as aio_module:
+            aio_module.sleep = asynctest.CoroutineMock()
+            for rate_limit_code in {423, 429, 500, 503}:
+                response = yield self.mixin.http_fetch(
+                    self.get_url(f'/error?status_code={rate_limit_code}'),
+                    max_http_attempts=max_attempts)
+                self.assertFalse(response.ok)
+                self.assertEqual(response.code, rate_limit_code)
+                self.assertEqual(response.attempts, max_attempts)
+                self.assertEqual([r.code for r in response.history],
+                                 [rate_limit_code] * max_attempts)
+                self.assertEqual(aio_module.sleep.await_count,
+                                 max_attempts - 1)
+                aio_module.sleep.assert_has_awaits([
+                    mock.call((2**attempt) * self.mixin.DEFAULT_RETRY_TIMEOUT)
+                    for attempt in range(max_attempts - 1)
+                ])
                 aio_module.sleep.reset_mock()
 
     @testing.gen_test

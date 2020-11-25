@@ -9,7 +9,6 @@ import asyncio
 import logging
 import os
 import time
-from urllib import parse
 
 from ietfparse import algorithms, errors, headers
 from sprockets.mixins.mediatype import transcoders
@@ -265,6 +264,7 @@ class HTTPClientMixin:
                          max_redirects=None,
                          connect_timeout=None,
                          request_timeout=None,
+                         retry_timeout=None,
                          max_http_attempts=None,
                          auth_username=None,
                          auth_password=None,
@@ -275,7 +275,10 @@ class HTTPClientMixin:
                          **kwargs):
         """Perform a HTTP request
 
-        Will retry up to ``self.MAX_HTTP_RETRIES`` times.
+        Will retry up to `max_http_attempts` times with an exponentially
+        increasing sleep time starting with `retry_timeout` seconds.  If
+        a ``Retry-Header`` is included in a response, then it will override
+        the calculated sleep time.
 
         :param str url: The URL for the request
         :param str method: The HTTP request method, defaults to ``GET``
@@ -292,6 +295,8 @@ class HTTPClientMixin:
             seconds, default 20 seconds
         :param float request_timeout:  Timeout for entire request in seconds,
             default 20 seconds
+        :param float retry_timeout:  Time to sleep between retries,
+            default 3 seconds
         :param int max_http_attempts: Maximum number of times to retry
             a request, default is 3 attempts
         :param str auth_username: Username for HTTP authentication
@@ -322,6 +327,8 @@ class HTTPClientMixin:
                                         self.DEFAULT_CONNECT_TIMEOUT)
         request_timeout = apply_default(request_timeout,
                                         self.DEFAULT_REQUEST_TIMEOUT)
+        retry_timeout = apply_default(retry_timeout,
+                                      self.DEFAULT_RETRY_TIMEOUT)
         max_http_attempts = apply_default(max_http_attempts,
                                           self.MAX_HTTP_RETRIES)
 
@@ -390,10 +397,7 @@ class HTTPClientMixin:
                 return response
             elif resp.code in dont_retry:
                 break
-            elif resp.code in {423, 429, 503}:
-                await self._http_resp_rate_limited(
-                    resp, min(connect_timeout, request_timeout))
-            elif resp.code < 500:
+            elif resp.code < 500 and resp.code not in {423, 429}:
                 LOGGER.debug(
                     'HTTP Response Error for %s to %s'
                     'attempt %i of %i (%s): %s', method, url, resp.code,
@@ -404,6 +408,16 @@ class HTTPClientMixin:
             LOGGER.warning(
                 'HTTP Error for %s to %s, attempt %i of %i (%s): %s', method,
                 url, attempt + 1, max_http_attempts, resp.code, response.body)
+
+            if attempt + 1 != max_http_attempts:
+                if response.headers.get('Retry-After'):
+                    retry_after = min(int(response.headers['Retry-After']),
+                                      request_timeout)
+                else:
+                    retry_after = (2**attempt) * retry_timeout
+                LOGGER.debug('Sleeping for %.f seconds before retry',
+                             retry_after)
+                await asyncio.sleep(retry_after)
 
         LOGGER.warning('HTTP %s to %s failed after %i attempts', method, url,
                        max_http_attempts)
@@ -481,20 +495,3 @@ class HTTPClientMixin:
             except AttributeError:
                 pass
         return DEFAULT_USER_AGENT
-
-    def _http_resp_rate_limited(self, response, timeout):
-        """Extract the ``Retry-After`` header value if the request was rate
-        limited and return a future to sleep for the specified duration.
-
-        :param tornado.httpclient.HTTPResponse response: The response
-        :param float timeout: Maximum number of seconds to wait regardless
-            of ``Retry-After`` header
-        :rtype: tornado.concurrent.Future
-
-        """
-        parsed = parse.urlparse(response.request.url)
-        duration = int(
-            response.headers.get('Retry-After', self.DEFAULT_RETRY_TIMEOUT))
-        LOGGER.warning('Rate Limited by %s, retrying in %i seconds',
-                       parsed.netloc, duration)
-        return asyncio.sleep(min(duration, timeout))
