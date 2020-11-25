@@ -4,6 +4,10 @@ Version History
 `Next Release`_
 ---------------
 - Make request retry timeout configurable
+- Apply retry sleeping to all retried attempts
+- Use an exponential backoff if ``Retry-After`` header is absent
+- Add ``retry_timeout`` parameter to
+  :meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch`
 
 `2.4.0`_ Nov 3 2020
 -------------------

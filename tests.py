@@ -29,16 +29,16 @@ def decode(value):
 
 
 class TestHandler(web.RequestHandler):
-
     def prepare(self):
         status_code = self.status_code()
+        reason = None
         if status_code in {423, 429, 503}:
-            self.add_header('Retry-After',
-                            self.get_argument('retry_after', '1'))
-            self.set_status(status_code, 'Rate Limited')
-            self.finish()
-        elif status_code in {502, 504}:
-            self.set_status(status_code)
+            reason = 'Rate Limited'
+        if self.get_query_argument('retry_after', None):
+            self.set_header('Retry-After',
+                            self.get_query_argument('retry_after'))
+        if status_code in {423, 429, 502, 503, 504}:
+            self.set_status(status_code, reason=reason)
             self.finish()
 
     def delete(self, *args, **kwargs):
@@ -75,10 +75,10 @@ class TestHandler(web.RequestHandler):
         self.set_status(status_code)
         if status_code >= 400:
             self.send_response({
-                'message': self.get_argument('message',
-                                             'Error Message Text'),
+                'message': self.get_argument('message', 'Error Message Text'),
                 'type': self.get_argument('message', 'Error Type Text'),
-                'traceback': None})
+                'traceback': None
+            })
         else:
             body = self.get_request_body()
             if isinstance(body, dict):
@@ -88,10 +88,12 @@ class TestHandler(web.RequestHandler):
                     self.add_header('Warning', body['warning'])
                 if 'response' in body:
                     return self.send_response(body['response'])
-            self.send_response({'headers': dict(self.request.headers),
-                                'path': self.request.path,
-                                'args': self.request.arguments,
-                                'body': self.get_request_body()})
+            self.send_response({
+                'headers': dict(self.request.headers),
+                'path': self.request.path,
+                'args': self.request.arguments,
+                'body': self.get_request_body()
+            })
 
     def send_response(self, payload):
         if isinstance(payload, (dict, list)):
@@ -107,8 +109,8 @@ class TestHandler(web.RequestHandler):
             LOGGER.debug('Setting response content-type: %r', content_type)
             self.set_header('Content-Type', content_type)
         if 'Correlation-Id' in self.request.headers:
-            self.set_header(
-                'Correlation-Id', self.request.headers['Correlation-ID'])
+            self.set_header('Correlation-Id',
+                            self.request.headers['Correlation-ID'])
         return self.write(decode(payload))
 
     def status_code(self):
@@ -117,30 +119,32 @@ class TestHandler(web.RequestHandler):
 
 
 class MixinTestCase(testing.AsyncHTTPTestCase):
-
     def setUp(self):
         super().setUp()
         self.correlation_id = str(uuid.uuid4())
         self.mixin = self.create_mixin()
 
     def get_app(self):
-        return web.Application([(r'/(.*)', TestHandler)],
-                               **{'service': 'test', 'version': '0.1.0'})
+        return web.Application([(r'/(.*)', TestHandler)], **{
+            'service': 'test',
+            'version': '0.1.0'
+        })
 
     def create_mixin(self, add_correlation=True):
+        headers = httputil.HTTPHeaders()
+        if add_correlation:
+            headers['Correlation-ID'] = self.correlation_id
         mixin = http.HTTPClientMixin()
         mixin.application = self._app
         mixin.settings = self._app.settings
-        mixin.request = httputil.HTTPServerRequest(
-            'GET', 'http://test:9999/test',
-            headers=httputil.HTTPHeaders(
-                {'Correlation-ID': self.correlation_id} if
-                add_correlation else {}))
+        mixin.DEFAULT_RETRY_TIMEOUT = 0.1
+        mixin.request = httputil.HTTPServerRequest('GET',
+                                                   'http://test:9999/test',
+                                                   headers=headers)
         return mixin
 
     @testing.gen_test
     def test_consumer_user_agent(self):
-
         class Process:
             def __init__(self):
                 self.consumer_name = 'consumer'
@@ -157,16 +161,11 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'consumer/1.1.1')
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'consumer/1.1.1')
 
     @testing.gen_test
     def test_consumer_user_agent_error(self):
-
-        class Process:
-            def __init__(self):
-                self.consumer_name = 'consumer'
-
         class Consumer(http.HTTPClientMixin):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -178,9 +177,8 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'),
-            'sprockets.mixins.http/{}'.format(http.__version__))
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'sprockets.mixins.http/{}'.format(http.__version__))
 
     @testing.gen_test
     def test_default_user_agent(self):
@@ -190,9 +188,8 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'),
-            'sprockets.mixins.http/{}'.format(http.__version__))
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'sprockets.mixins.http/{}'.format(http.__version__))
 
     @testing.gen_test
     def test_default_user_agent_with_partial_config(self):
@@ -204,14 +201,12 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.attempts, 1)
         self.assertGreater(response.duration, 0)
         self.assertEqual(response.code, response.raw.code)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'),
-            'sprockets.mixins.http/{}'.format(http.__version__))
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'sprockets.mixins.http/{}'.format(http.__version__))
 
     @testing.gen_test
     def test_socket_errors(self):
-        with mock.patch(
-                'tornado.httpclient.AsyncHTTPClient.fetch') as fetch:
+        with mock.patch('tornado.httpclient.AsyncHTTPClient.fetch') as fetch:
             fetch.side_effect = OSError
             response = yield self.mixin.http_fetch(self.get_url('/test'))
         self.assertFalse(response.ok)
@@ -226,8 +221,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
 
     @testing.gen_test
     def test_tornado_httpclient_errors(self):
-        with mock.patch(
-                'tornado.httpclient.AsyncHTTPClient.fetch') as fetch:
+        with mock.patch('tornado.httpclient.AsyncHTTPClient.fetch') as fetch:
             fetch.side_effect = httpclient.HTTPError(599)
             response = yield self.mixin.http_fetch(self.get_url('/test'))
         self.assertFalse(response.ok)
@@ -258,10 +252,12 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
-        self.assertDictEqual(response.body['args'],
-                             {'foo': ['bar'], 'status_code': ['200']})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
+        self.assertDictEqual(response.body['args'], {
+            'foo': ['bar'],
+            'status_code': ['200']
+        })
         self.assertIsNone(response.links)
 
     @testing.gen_test
@@ -269,17 +265,23 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
             method='POST',
-            body={'foo': 'bar', 'status_code': 200})
+            body={
+                'foo': 'bar',
+                'status_code': 200
+            },
+        )
 
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
-        self.assertDictEqual(response.body['body'],
-                             {'foo': 'bar', 'status_code': 200})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
+        self.assertDictEqual(response.body['body'], {
+            'foo': 'bar',
+            'status_code': 200
+        })
 
     @testing.gen_test
     def test_get_json(self):
@@ -292,10 +294,12 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
-        self.assertDictEqual(response.body['args'],
-                             {'foo': ['bar'], 'status_code': ['200']})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
+        self.assertDictEqual(response.body['args'], {
+            'foo': ['bar'],
+            'status_code': ['200']
+        })
 
     @testing.gen_test
     def test_get_custom_user_agent(self):
@@ -309,10 +313,12 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'custom/3.0.0')
-        self.assertDictEqual(response.body['args'],
-                             {'foo': ['bar'], 'status_code': ['200']})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'custom/3.0.0')
+        self.assertDictEqual(response.body['args'], {
+            'foo': ['bar'],
+            'status_code': ['200']
+        })
 
     @testing.gen_test
     def test_post_html(self):
@@ -321,15 +327,18 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             self.get_url('/test'),
             method='POST',
             body=expectation,
-            request_headers={'Accept': 'text/html',
-                             'Content-Type': 'text/html'})
+            request_headers={
+                'Accept': 'text/html',
+                'Content-Type': 'text/html'
+            },
+        )
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
         self.assertEqual(response.body['body'], expectation)
 
     @testing.gen_test
@@ -337,28 +346,40 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
             method='POST',
-            body={'foo': 'bar', 'status_code': 200},
-            request_headers={'Accept': 'application/json',
-                             'Content-Type': 'application/json'})
+            body={
+                'foo': 'bar',
+                'status_code': 200
+            },
+            request_headers={
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            })
 
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
-        self.assertDictEqual(response.body['body'],
-                             {'foo': 'bar', 'status_code': 200})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
+        self.assertDictEqual(response.body['body'], {
+            'foo': 'bar',
+            'status_code': 200
+        })
 
     @testing.gen_test
     def test_post_custom_user_agent(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
             method='POST',
-            body={'foo': 'bar', 'status_code': 200},
-            request_headers={'Accept': 'application/json',
-                             'Content-Type': 'application/json'},
+            body={
+                'foo': 'bar',
+                'status_code': 200
+            },
+            request_headers={
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
             user_agent='custom/3.0.0')
 
         self.assertTrue(response.ok)
@@ -366,83 +387,132 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'custom/3.0.0')
-        self.assertDictEqual(response.body['body'],
-                             {'foo': 'bar', 'status_code': 200})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'custom/3.0.0')
+        self.assertDictEqual(response.body['body'], {
+            'foo': 'bar',
+            'status_code': 200
+        })
 
     @testing.gen_test
     def test_post_msgpack(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
             method='POST',
-            body={'foo': 'bar', 'status_code': 200},
-            request_headers={'Accept': 'application/msgpack',
-                             'Content-Type': 'application/msgpack'})
+            body={
+                'foo': 'bar',
+                'status_code': 200
+            },
+            request_headers={
+                'Accept': 'application/msgpack',
+                'Content-Type': 'application/msgpack'
+            })
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
-        self.assertDictEqual(response.body['body'],
-                             {'foo': 'bar', 'status_code': 200})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
+        self.assertDictEqual(response.body['body'], {
+            'foo': 'bar',
+            'status_code': 200
+        })
 
     @testing.gen_test
     def test_post_pre_serialized_json(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
             method='POST',
-            body=json.dumps({'foo': 'bar', 'status_code': 200}),
-            request_headers={'Accept': 'application/json',
-                             'Content-Type': 'application/json'})
+            body=json.dumps({
+                'foo': 'bar',
+                'status_code': 200
+            }),
+            request_headers={
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            })
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
-        self.assertDictEqual(response.body['body'],
-                             {'foo': 'bar', 'status_code': 200})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
+        self.assertDictEqual(response.body['body'], {
+            'foo': 'bar',
+            'status_code': 200
+        })
 
     @testing.gen_test
     def test_post_pre_serialized_msgpack(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
             method='POST',
-            body=umsgpack.packb({'foo': 'bar', 'status_code': 200}),
-            request_headers={'Accept': 'application/msgpack',
-                             'Content-Type': 'application/msgpack'})
+            body=umsgpack.packb({
+                'foo': 'bar',
+                'status_code': 200
+            }),
+            request_headers={
+                'Accept': 'application/msgpack',
+                'Content-Type': 'application/msgpack'
+            })
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
-        self.assertDictEqual(response.body['body'],
-                             {'foo': 'bar', 'status_code': 200})
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
+        self.assertDictEqual(response.body['body'], {
+            'foo': 'bar',
+            'status_code': 200
+        })
         self.assertEqual([r.code for r in response.history], [200])
 
     @testing.gen_test
-    def test_rate_limiting_behavior(self):
+    def test_rate_limiting_behavior_with_retry_after(self):
         with asynctest.mock.patch(
                 'sprockets.mixins.http.asyncio') as aio_module:
             aio_module.sleep = asynctest.CoroutineMock()
-            for rate_limit_code in {423, 429, 503}:
+            for rate_limit_code in {423, 429, 500, 502, 503}:
                 response = yield self.mixin.http_fetch(
                     self.get_url(f'/error?status_code={rate_limit_code}'
                                  f'&retry_after=2'))
                 self.assertFalse(response.ok)
                 self.assertEqual(response.code, rate_limit_code)
-                self.assertEqual(response.attempts, 3)
+                self.assertEqual(response.attempts,
+                                 self.mixin.MAX_HTTP_RETRIES)
+                self.assertEqual(
+                    [r.code for r in response.history],
+                    ([rate_limit_code] * self.mixin.MAX_HTTP_RETRIES))
+                self.assertEqual(aio_module.sleep.await_count,
+                                 self.mixin.MAX_HTTP_RETRIES - 1)
+                aio_module.sleep.assert_has_awaits(
+                    ([mock.call(2)] * (self.mixin.MAX_HTTP_RETRIES - 1)))
+                aio_module.sleep.reset_mock()
+
+    @testing.gen_test
+    def test_rate_limiting_behavior_without_retry_after(self):
+        max_attempts = 5
+        with asynctest.mock.patch(
+                'sprockets.mixins.http.asyncio') as aio_module:
+            aio_module.sleep = asynctest.CoroutineMock()
+            for rate_limit_code in {423, 429, 500, 502, 503}:
+                response = yield self.mixin.http_fetch(
+                    self.get_url(f'/error?status_code={rate_limit_code}'),
+                    max_http_attempts=max_attempts)
+                self.assertFalse(response.ok)
+                self.assertEqual(response.code, rate_limit_code)
+                self.assertEqual(response.attempts, max_attempts)
                 self.assertEqual([r.code for r in response.history],
-                                 [rate_limit_code] * response.attempts)
-                self.assertEqual(aio_module.sleep.await_count, 3)
-                aio_module.sleep.assert_has_awaits([mock.call(2), mock.call(2),
-                                                    mock.call(2)])
+                                 [rate_limit_code] * max_attempts)
+                self.assertEqual(aio_module.sleep.await_count,
+                                 max_attempts - 1)
+                aio_module.sleep.assert_has_awaits([
+                    mock.call((2**attempt) * self.mixin.DEFAULT_RETRY_TIMEOUT)
+                    for attempt in range(max_attempts - 1)
+                ])
                 aio_module.sleep.reset_mock()
 
     @testing.gen_test
@@ -462,9 +532,11 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertFalse(response.ok)
         self.assertEqual(response.code, 400)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body,
-            {'message': 'Test Error', 'type': 'Test Error', 'traceback': None})
+        self.assertEqual(response.body, {
+            'message': 'Test Error',
+            'type': 'Test Error',
+            'traceback': None
+        })
 
     @testing.gen_test
     def test_error_retry(self):
@@ -491,8 +563,10 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             self.get_url('/test?content_type=text/html'),
             method='POST',
             body={'response': expectation},
-            request_headers={'Accept': 'text/html',
-                             'Content-Type': 'application/json'})
+            request_headers={
+                'Accept': 'text/html',
+                'Content-Type': 'application/json'
+            })
         self.assertTrue(response.ok)
         self.assertEqual(response.headers['Content-Type'], 'text/html')
         self.assertEqual(response.body.decode('utf-8'), expectation)
@@ -502,8 +576,12 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
             method='DELETE',
-            body={'foo': 'bar', 'status_code': 200},
-            allow_nonstandard_methods=True)
+            body={
+                'foo': 'bar',
+                'status_code': 200
+            },
+            allow_nonstandard_methods=True,
+        )
         self.assertTrue(response.ok)
 
     @testing.gen_test
@@ -531,22 +609,27 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
 
     @testing.gen_test
     def test_get_link_header(self):
-        body = {'link': '<http://example.com/TheBook/chapter2>; '
-                'rel="previous"; '
-                'title="previous chapter"', 'status_code': 200}
+        body = {
+            'link': '<http://example.com/TheBook/chapter2>; '
+            'rel="previous"; '
+            'title="previous chapter"',
+            'status_code': 200
+        }
         response = yield self.mixin.http_fetch(
             self.get_url('/test'),
             method='POST',
             body=body,
-            request_headers={'Accept': 'application/msgpack',
-                             'Content-Type': 'application/msgpack'})
+            request_headers={
+                'Accept': 'application/msgpack',
+                'Content-Type': 'application/msgpack'
+            })
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
         self.assertDictEqual(response.body['body'], body)
 
         expectation = {
@@ -558,15 +641,19 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
 
     @testing.gen_test
     def test_get_warning_header(self):
-        body = {'warning': '110 anderson/1.3.37 "Response is stale"',
-                'status_code': 200}
+        body = {
+            'warning': '110 anderson/1.3.37 "Response is stale"',
+            'status_code': 200
+        }
         with mock.patch.object(http.LOGGER, 'warning') as warning:
             response = yield self.mixin.http_fetch(
                 self.get_url('/test'),
                 method='POST',
                 body=body,
-                request_headers={'Accept': 'application/msgpack',
-                                 'Content-Type': 'application/msgpack'})
+                request_headers={
+                    'Accept': 'application/msgpack',
+                    'Content-Type': 'application/msgpack'
+                })
             warning.assert_called_once()
 
         self.assertTrue(response.ok)
@@ -574,8 +661,8 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.body['headers'].get('Correlation-Id'),
                          self.correlation_id)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.body['headers'].get('User-Agent'), 'test/0.1.0')
+        self.assertEqual(response.body['headers'].get('User-Agent'),
+                         'test/0.1.0')
         self.assertDictEqual(response.body['body'], body)
 
     @testing.gen_test
@@ -587,8 +674,8 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertTrue(response.ok)
         self.assertEqual(response.code, 200)
         self.assertEqual(response.attempts, 1)
-        self.assertEqual(
-            response.headers['Correlation-Id'], mixin.correlation_id)
+        self.assertEqual(response.headers['Correlation-Id'],
+                         mixin.correlation_id)
 
     @testing.gen_test
     def test_dont_retry(self):
@@ -635,8 +722,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             chunks.append(chunk)
 
         response = yield self.mixin.http_fetch(
-            self.get_url('/test'),
-            streaming_callback=streaming_callback)
+            self.get_url('/test'), streaming_callback=streaming_callback)
         self.assertTrue(response.ok)
         self.assertGreater(len(chunks), 0)
 
@@ -645,19 +731,22 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         for value in (True, False, object()):
             with self.assertRaises(RuntimeError, msg=str(value)):
                 yield self.mixin.http_fetch(
-                    self.get_url('/error?status_code=410'),
-                    raise_error=value)
+                    self.get_url('/error?status_code=410'), raise_error=value)
 
     @testing.gen_test
     def test_that_empty_bodies_are_serialized(self):
         response = yield self.mixin.http_fetch(
-            self.get_url('/'), method='POST', body={},
+            self.get_url('/'),
+            method='POST',
+            body={},
             request_headers={'Content-Type': 'application/json'})
         self.assertEqual(200, response.code)
         self.assertEqual({}, response.body['body'])
 
         response = yield self.mixin.http_fetch(
-            self.get_url('/'), method='POST', body=[],
+            self.get_url('/'),
+            method='POST',
+            body=[],
             request_headers={'Content-Type': 'application/json'})
         self.assertEqual(200, response.code)
         self.assertEqual([], response.body['body'])

@@ -11,4 +11,5 @@ flake8-rst-docstrings==0.0.11
 flake8-tuple==0.4.0
 nose==1.3.7
 u-msgpack-python==2.5.2
+yapf==0.30.0
 -r installation.txt

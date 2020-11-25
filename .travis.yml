@@ -8,8 +8,9 @@ python:
 install:
 - pip install -r requires/development.txt
 script:
-- nosetests
 - flake8
+- yapf -dr sprockets tests.py
+- nosetests
 after_success:
 - codecov
 - ./setup.py build_sphinx
