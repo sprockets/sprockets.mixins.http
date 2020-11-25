@@ -1,3 +1,4 @@
 -e .
+tox>=3.20,<4
 -r docs.txt
 -r testing.txt
