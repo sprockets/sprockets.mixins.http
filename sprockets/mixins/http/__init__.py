@@ -247,6 +247,7 @@ class HTTPClientMixin:
 
     DEFAULT_CONNECT_TIMEOUT = 10
     DEFAULT_REQUEST_TIMEOUT = 60
+    DEFAULT_RETRY_TIMEOUT = 3
 
     MAX_HTTP_RETRIES = 3
     MAX_REDIRECTS = 5
@@ -486,8 +487,7 @@ class HTTPClientMixin:
                 pass
         return DEFAULT_USER_AGENT
 
-    @staticmethod
-    def _http_resp_rate_limited(response, timeout=3.0):
+    def _http_resp_rate_limited(self, response, timeout):
         """Extract the ``Retry-After`` header value if the request was rate
         limited and return a future to sleep for the specified duration.
 
@@ -498,7 +498,8 @@ class HTTPClientMixin:
 
         """
         parsed = parse.urlparse(response.request.url)
-        duration = int(response.headers.get('Retry-After', 3))
+        duration = int(
+            response.headers.get('Retry-After', self.DEFAULT_RETRY_TIMEOUT))
         LOGGER.warning('Rate Limited by %s, retrying in %i seconds',
                        parsed.netloc, duration)
         return asyncio.sleep(min(duration, timeout))
