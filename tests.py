@@ -475,7 +475,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         with asynctest.mock.patch(
                 'sprockets.mixins.http.asyncio') as aio_module:
             aio_module.sleep = asynctest.CoroutineMock()
-            for rate_limit_code in {423, 429, 500, 503}:
+            for rate_limit_code in {423, 429, 500, 502, 503}:
                 response = yield self.mixin.http_fetch(
                     self.get_url(f'/error?status_code={rate_limit_code}'
                                  f'&retry_after=2'))
@@ -498,7 +498,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         with asynctest.mock.patch(
                 'sprockets.mixins.http.asyncio') as aio_module:
             aio_module.sleep = asynctest.CoroutineMock()
-            for rate_limit_code in {423, 429, 500, 503}:
+            for rate_limit_code in {423, 429, 500, 502, 503}:
                 response = yield self.mixin.http_fetch(
                     self.get_url(f'/error?status_code={rate_limit_code}'),
                     max_http_attempts=max_attempts)
