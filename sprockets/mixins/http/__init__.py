@@ -30,7 +30,6 @@ class HTTPResponse:
      :meth:`~sprockets.mixins.http.HTTPClientMixin.http_fetch` method.
 
     """
-
     def __init__(self, simplify_error_response=True):
         self._exceptions = []
         self._finish = None
@@ -64,11 +63,10 @@ class HTTPResponse:
         """
         self._responses.append(response)
         if 'Warning' in response.headers:
-            LOGGER.warning(
-                'HTTP %s %s Warning (%s): %s (attempt %s)',
-                response.request.method, response.request.url,
-                response.code, response.headers['Warning'],
-                len(self._responses))
+            LOGGER.warning('HTTP %s %s Warning (%s): %s (attempt %s)',
+                           response.request.method, response.request.url,
+                           response.code, response.headers['Warning'],
+                           len(self._responses))
 
     def finish(self):
         """Mark the processing as finished"""
@@ -197,8 +195,7 @@ class HTTPResponse:
         if isinstance(value, list):
             return [self._decode(v) for v in value]
         elif isinstance(value, dict):
-            return {self._decode(k): self._decode(v)
-                    for k, v in value.items()}
+            return {self._decode(k): self._decode(v) for k, v in value.items()}
         elif isinstance(value, bytes):
             return value.decode('utf-8')
         return value
@@ -215,10 +212,10 @@ class HTTPResponse:
         if 'Content-Type' not in self._responses[-1].headers:
             return self._responses[-1].body
         try:
-            content_type = algorithms.select_content_type(
-                [headers.parse_content_type(
-                    self._responses[-1].headers['Content-Type'])],
-                AVAILABLE_CONTENT_TYPES)
+            content_type = algorithms.select_content_type([
+                headers.parse_content_type(
+                    self._responses[-1].headers['Content-Type'])
+            ], AVAILABLE_CONTENT_TYPES)
         except errors.NoMatch:
             return self._responses[-1].body
 
@@ -226,8 +223,8 @@ class HTTPResponse:
             return self._decode(
                 self._json.loads(self._decode(self._responses[-1].body)))
         elif content_type[0] == CONTENT_TYPE_MSGPACK:  # pragma: nocover
-            return self._decode(
-                self._msgpack.unpackb(self._responses[-1].body))
+            return self._decode(self._msgpack.unpackb(
+                self._responses[-1].body))
 
     def _error_message(self):
         """Try and extract the error message from a HTTP error response.
@@ -258,7 +255,8 @@ class HTTPClientMixin:
         self.__hcm_msgpack = transcoders.MsgPackTranscoder()
         self.simplify_error_response = True
 
-    async def http_fetch(self, url,
+    async def http_fetch(self,
+                         url,
                          method='GET',
                          request_headers=None,
                          body=None,
@@ -314,6 +312,7 @@ class HTTPClientMixin:
             is specified
 
         """
+
         # Curry the request parameters through from our named params
         def apply_default(val, default):
             return default if val is None else val
@@ -365,18 +364,16 @@ class HTTPClientMixin:
                                'called with raise_error')
 
         for attempt in range(0, max_http_attempts):
-            LOGGER.debug('%s %s (Attempt %i of %i) %r',
-                         method, url, attempt + 1, max_http_attempts,
-                         request_headers)
+            LOGGER.debug('%s %s (Attempt %i of %i) %r', method, url,
+                         attempt + 1, max_http_attempts, request_headers)
             if attempt > 0:
                 request_headers['X-Retry-Attempt'] = str(attempt + 1)
             try:
-                resp = await client.fetch(
-                    str(url),
-                    headers=request_headers,
-                    body=body,
-                    raise_error=False,
-                    **kwargs)
+                resp = await client.fetch(str(url),
+                                          headers=request_headers,
+                                          body=body,
+                                          raise_error=False,
+                                          **kwargs)
             except (OSError, httpclient.HTTPError) as error:
                 response.append_exception(error)
                 LOGGER.warning(
@@ -397,25 +394,24 @@ class HTTPClientMixin:
                 await self._http_resp_rate_limited(
                     resp, min(connect_timeout, request_timeout))
             elif resp.code < 500:
-                LOGGER.debug('HTTP Response Error for %s to %s'
-                             'attempt %i of %i (%s): %s',
-                             method, url, resp.code, attempt + 1,
-                             max_http_attempts, response.body)
+                LOGGER.debug(
+                    'HTTP Response Error for %s to %s'
+                    'attempt %i of %i (%s): %s', method, url, resp.code,
+                    attempt + 1, max_http_attempts, response.body)
                 response.finish()
                 return response
 
             LOGGER.warning(
-                'HTTP Error for %s to %s, attempt %i of %i (%s): %s',
-                method, url, attempt + 1, max_http_attempts, resp.code,
-                response.body)
+                'HTTP Error for %s to %s, attempt %i of %i (%s): %s', method,
+                url, attempt + 1, max_http_attempts, resp.code, response.body)
 
         LOGGER.warning('HTTP %s to %s failed after %i attempts', method, url,
                        max_http_attempts)
         response.finish()
         return response
 
-    def _http_req_apply_default_headers(self, request_headers,
-                                        content_type, body):
+    def _http_req_apply_default_headers(self, request_headers, content_type,
+                                        body):
         """Set default values for common HTTP request headers
 
         :param dict request_headers: The HTTP request headers
@@ -432,14 +428,14 @@ class HTTPClientMixin:
             'Accept', ', '.join([str(ct) for ct in AVAILABLE_CONTENT_TYPES]))
         if body:
             request_headers.setdefault(
-                'Content-Type', str(content_type) or str(CONTENT_TYPE_MSGPACK))
+                'Content-Type',
+                str(content_type) or str(CONTENT_TYPE_MSGPACK))
         if hasattr(self, 'correlation_id'):
-            request_headers.setdefault(
-                'Correlation-Id', self.correlation_id)
+            request_headers.setdefault('Correlation-Id', self.correlation_id)
         elif hasattr(self, 'request') and \
                 self.request.headers.get('Correlation-Id'):
-            request_headers.setdefault(
-                'Correlation-Id', self.request.headers['Correlation-Id'])
+            request_headers.setdefault('Correlation-Id',
+                                       self.request.headers['Correlation-Id'])
         return request_headers
 
     def _http_req_body_serialize(self, body, content_type):
@@ -472,17 +468,16 @@ class HTTPClientMixin:
         """
         # Tornado Request Handler
         try:
-            return '{}/{}'.format(
-                self.settings['service'], self.settings['version'])
+            return '{}/{}'.format(self.settings['service'],
+                                  self.settings['version'])
         except (AttributeError, KeyError):
             pass
 
         # Rejected Consumer
         if hasattr(self, '_process'):
             try:
-                return '{}/{}'.format(
-                    self._process.consumer_name,
-                    self._process.consumer_version)
+                return '{}/{}'.format(self._process.consumer_name,
+                                      self._process.consumer_version)
             except AttributeError:
                 pass
         return DEFAULT_USER_AGENT
