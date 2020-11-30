@@ -1,8 +1,8 @@
 Version History
 ===============
 
-`Next Release`_
----------------
+`2.4.1`_ Nov 30 2020
+--------------------
 - Make request retry timeout configurable
 - Apply retry sleeping to all retried attempts
 - Use an exponential backoff if ``Retry-After`` header is absent
@@ -119,7 +119,8 @@ Version History
 ---------------------
 - Initial Version
 
-.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.0...master
+.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.1...master
+.. _2.4.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.0...2.4.1
 .. _2.4.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.3...2.4.0
 .. _2.3.3: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.1...2.3.3
 .. _2.3.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.0...2.3.1
