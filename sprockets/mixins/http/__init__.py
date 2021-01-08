@@ -196,7 +196,10 @@ class HTTPResponse:
         elif isinstance(value, dict):
             return {self._decode(k): self._decode(v) for k, v in value.items()}
         elif isinstance(value, bytes):
-            return value.decode('utf-8')
+            try:
+                return value.decode('utf-8')
+            except UnicodeDecodeError:
+                return value.decode('iso-8859-1')
         return value
 
     def _deserialize(self):

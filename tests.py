@@ -750,3 +750,19 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             request_headers={'Content-Type': 'application/json'})
         self.assertEqual(200, response.code)
         self.assertEqual([], response.body['body'])
+
+    @testing.gen_test
+    def test_iso_8859_1_response_body_decode(self):
+        mock_response = mock.Mock()
+        mock_response.code = 200
+        mock_response.body = '{"value": "í"}'.encode('iso-8859-1')
+        mock_response.headers = {'Content-Type': 'application/json'}
+
+        response = http.HTTPResponse()
+        response.append_response(mock_response)
+
+        # raw body cannot be decoded as utf-8
+        with self.assertRaises(UnicodeDecodeError):
+            response.raw.body.decode('utf-8')
+        # sprockets.mixins.http decode successfully
+        self.assertEqual(response.body, {'value': 'í'})
