@@ -371,10 +371,12 @@ class HTTPClientMixin:
                                'called with raise_error')
 
         for attempt in range(0, max_http_attempts):
+            if attempt > 0:
+                url, request_headers, body = self._http_req_modify_for_retry(
+                    response, attempt, url, request_headers, body)
+
             LOGGER.debug('%s %s (Attempt %i of %i) %r', method, url,
                          attempt + 1, max_http_attempts, request_headers)
-            if attempt > 0:
-                request_headers['X-Retry-Attempt'] = str(attempt + 1)
             try:
                 resp = await client.fetch(str(url),
                                           headers=request_headers,
@@ -495,3 +497,25 @@ class HTTPClientMixin:
             except AttributeError:
                 pass
         return DEFAULT_USER_AGENT
+
+    def _http_req_modify_for_retry(self, response: HTTPResponse, attempt: int,
+                                   url: str, headers: dict, body):
+        """Implement this method to modify the request on each attempt.
+
+        :param response: the current HTTP response which includes
+            both response and exception history
+        :param attempt: current attempt counter
+        :param url: current request URL
+        :param headers: current request headers
+        :param body: serialized request body
+
+        The default behavior is to add the ``X-Retry-Attempt`` header.
+        You will need to implement this for protocols that include a
+        one-time-use value such as the OAuth 1 request nonce.
+
+        :returns: a tuple containing the URL, headers, and body to use
+            in the next request
+
+        """
+        headers['X-Retry-Attempt'] = str(attempt + 1)
+        return url, headers, body
