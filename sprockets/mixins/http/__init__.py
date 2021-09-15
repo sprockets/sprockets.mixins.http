@@ -152,13 +152,13 @@ class HTTPResponse:
         """
         if not self._responses:
             return None
+        links = []
         if 'Link' in self._responses[-1].headers:
-            links = []
             for l in headers.parse_link(self._responses[-1].headers['Link']):
                 link = {'target': l.target}
                 link.update({k: v for (k, v) in l.parameters})
                 links.append(link)
-            return links
+        return links
 
     @property
     def ok(self):
