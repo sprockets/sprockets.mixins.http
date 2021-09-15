@@ -1,6 +1,10 @@
 Version History
 ===============
 
+Next
+----
+- Change ``HTTPResponse.links`` to return empty list when ``Link`` header is not present
+
 `2.4.1`_ Nov 30 2020
 --------------------
 - Make request retry timeout configurable

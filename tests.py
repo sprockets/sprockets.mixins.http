@@ -258,7 +258,7 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             'foo': ['bar'],
             'status_code': ['200']
         })
-        self.assertIsNone(response.links)
+        self.assertEqual(response.links, [])
 
     @testing.gen_test
     def test_post(self):
