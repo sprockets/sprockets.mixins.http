@@ -1,8 +1,8 @@
 Version History
 ===============
 
-Next
-----
+`2.5.0`_ Sep 16 2021
+--------------------
 - Change ``HTTPResponse.links`` to return empty list when ``Link`` header is not present
 - Move ``X-Retry-Attempt`` header insertion into
   :meth:`~sprockets.mixins.http.HTTPClientMixin._http_req_modify_for_retry`
@@ -126,7 +126,8 @@ Next
 ---------------------
 - Initial Version
 
-.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.1...master
+.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.5.0...master
+.. _2.5.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.1...2.5.0
 .. _2.4.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.0...2.4.1
 .. _2.4.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.3...2.4.0
 .. _2.3.3: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.1...2.3.3

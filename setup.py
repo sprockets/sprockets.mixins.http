@@ -23,7 +23,7 @@ def read_requirements(name):
 
 setuptools.setup(
     name='sprockets.mixins.http',
-    version='2.4.1',
+    version='2.5.0',
     description='HTTP Client Mixin for Tornado RequestHandlers',
     long_description=open('README.rst').read(),
     url='https://github.com/sprockets/sprockets.mixins.http',
