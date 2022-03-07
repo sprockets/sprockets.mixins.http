@@ -249,6 +249,16 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.attempts, 3)
 
     @testing.gen_test
+    def test_correlation_id_is_none(self):
+        mixin = self.create_mixin()
+        mixin.correlation_id = None
+        response = yield mixin.http_fetch(
+            self.get_url('/error?status_code=502'))
+        self.assertFalse(response.ok)
+        self.assertEqual(response.code, 502)
+        self.assertEqual(response.attempts, 3)
+
+    @testing.gen_test
     def test_get(self):
         response = yield self.mixin.http_fetch(
             self.get_url('/test?foo=bar&status_code=200'))

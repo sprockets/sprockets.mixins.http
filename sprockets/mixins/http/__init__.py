@@ -454,7 +454,7 @@ class HTTPClientMixin:
             request_headers.setdefault(
                 'Content-Type',
                 str(content_type) or str(CONTENT_TYPE_MSGPACK))
-        if hasattr(self, 'correlation_id'):
+        if hasattr(self, 'correlation_id') and self.correlation_id:
             request_headers.setdefault('Correlation-Id', self.correlation_id)
         elif hasattr(self, 'request') and \
                 self.request.headers.get('Correlation-Id'):
