@@ -61,10 +61,13 @@ class TestHandler(web.RequestHandler):
         self.respond()
 
     def get_request_body(self):
-        if 'Content-Type' in self.request.headers:
-            if self.request.headers['Content-Type'] == 'application/json':
+        content_type = self.request.headers.get('Content-Type')
+        if content_type is not None:
+            if content_type == 'application/json' \
+                    or content_type.endswith('+json'):
                 return json.loads(self.request.body.decode('utf-8'))
-            elif self.request.headers['Content-Type'] == 'application/msgpack':
+            elif content_type == 'application/msgpack' \
+                    or content_type.endswith('+msgpack'):
                 return umsgpack.unpackb(self.request.body)
         if self.request.body_arguments:
             return self.request.body_arguments
@@ -97,11 +100,13 @@ class TestHandler(web.RequestHandler):
 
     def send_response(self, payload):
         if isinstance(payload, (dict, list)):
-            if self.request.headers.get('Accept') == 'application/json':
-                self.set_header('Content-Type', 'application/json')
-                return self.write(decode(payload))
-            elif self.request.headers.get('Accept') == 'application/msgpack':
-                self.set_header('Content-Type', 'application/msgpack')
+            accept = self.request.headers.get('Accept')
+            if accept == 'application/json' or accept.endswith('+json'):
+                self.set_header('Content-Type', accept)
+                return self.write(json.dumps(decode(payload)))
+            elif accept == 'application/msgpack' \
+                    or accept.endswith('+msgpack'):
+                self.set_header('Content-Type', accept)
                 return self.write(umsgpack.packb(decode(payload)))
         LOGGER.debug('Bypassed serialization')
         content_type = self.get_argument('content_type', None)
@@ -750,3 +755,41 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
             request_headers={'Content-Type': 'application/json'})
         self.assertEqual(200, response.code)
         self.assertEqual([], response.body['body'])
+
+    @testing.gen_test
+    def test_post_msgpack_suffix(self):
+        body = {
+            'foo': 'bar',
+            'status_code': 200
+        }
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test'),
+            method='POST',
+            body=body,
+            request_headers={
+                'Accept': 'bar/foo+msgpack',
+                'Content-Type': 'foo/bar+msgpack'
+            })
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.headers['Content-Type'],
+                         'bar/foo+msgpack')
+        self.assertEqual(response.body['body'], body)
+
+    @testing.gen_test
+    def test_post_json_suffix(self):
+        body = {
+            'foo': 'bar',
+            'status_code': 200
+        }
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test'),
+            method='POST',
+            body=body,
+            request_headers={
+                'Accept': 'bar/foo+json',
+                'Content-Type': 'foo/bar+json'
+            })
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.headers['Content-Type'],
+                         'bar/foo+json')
+        self.assertEqual(response.body['body'], body)
