@@ -20,6 +20,8 @@ LOGGER = logging.getLogger(__name__)
 
 CONTENT_TYPE_JSON = headers.parse_content_type('application/json')
 CONTENT_TYPE_MSGPACK = headers.parse_content_type('application/msgpack')
+CONTENT_TYPE_SUFFIX_JSON = 'json'
+CONTENT_TYPE_SUFFIX_MSGPACK = 'msgpack'
 AVAILABLE_CONTENT_TYPES = [CONTENT_TYPE_JSON, CONTENT_TYPE_MSGPACK]
 DEFAULT_USER_AGENT = 'sprockets.mixins.http/{}'.format(__version__)
 
@@ -206,24 +208,30 @@ class HTTPResponse:
         :rtype: mixed
 
         """
-        if not self._responses or not self._responses[-1].body:
-            return None
-        if 'Content-Type' not in self._responses[-1].headers:
-            return self._responses[-1].body
-        try:
-            content_type = algorithms.select_content_type([
-                headers.parse_content_type(
-                    self._responses[-1].headers['Content-Type'])
-            ], AVAILABLE_CONTENT_TYPES)
-        except errors.NoMatch:
-            return self._responses[-1].body
+        if not self._responses:
+            return
+        response = self._responses[-1]
+        if not response.body:
+            return
+        if 'Content-Type' not in response.headers:
+            return response.body
 
-        if content_type[0] == CONTENT_TYPE_JSON:
-            return self._decode(
-                self._json.loads(self._decode(self._responses[-1].body)))
-        elif content_type[0] == CONTENT_TYPE_MSGPACK:  # pragma: nocover
-            return self._decode(self._msgpack.unpackb(
-                self._responses[-1].body))
+        content_type = headers.parse_content_type(
+            response.headers['Content-Type'])
+        if content_type.content_suffix == CONTENT_TYPE_SUFFIX_JSON:
+            return self._decode(self._json.loads(self._decode(response.body)))
+        elif content_type.content_suffix == CONTENT_TYPE_SUFFIX_MSGPACK:
+            return self._decode(self._msgpack.unpackb(response.body))
+
+        try:
+            selected = algorithms.select_content_type(
+                [content_type], AVAILABLE_CONTENT_TYPES)
+        except errors.NoMatch:
+            return response.body
+        if selected[0] == CONTENT_TYPE_JSON:
+            return self._decode(self._json.loads(self._decode(response.body)))
+        elif selected[0] == CONTENT_TYPE_MSGPACK:
+            return self._decode(self._msgpack.unpackb(response.body))
 
     def _error_message(self):
         """Try and extract the error message from a HTTP error response.
@@ -466,9 +474,11 @@ class HTTPClientMixin:
         if body is None or not isinstance(body, (dict, list)):
             return body
         content_type = headers.parse_content_type(content_type)
-        if content_type == CONTENT_TYPE_JSON:
+        if content_type == CONTENT_TYPE_JSON \
+                or content_type.content_suffix == CONTENT_TYPE_SUFFIX_JSON:
             return self.__hcm_json.dumps(body)
-        elif content_type == CONTENT_TYPE_MSGPACK:
+        elif content_type == CONTENT_TYPE_MSGPACK \
+                or content_type.content_suffix == CONTENT_TYPE_SUFFIX_MSGPACK:
             return self.__hcm_msgpack.packb(body)
         raise ValueError('Unsupported Content Type')
 
