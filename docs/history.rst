@@ -1,6 +1,11 @@
 Version History
 ===============
 
+`2.6.0`_ Mar 07 2022
+--------------------
+- Add support for ``Content-Type`` suffixes (ex. ``a/b+json``, ``x/y+msgpack``)
+- Fix exception when ``self.correlation_id`` is ``None``
+
 `2.5.0`_ Sep 16 2021
 --------------------
 - Change ``HTTPResponse.links`` to return empty list when ``Link`` header is not present
@@ -126,7 +131,8 @@ Version History
 ---------------------
 - Initial Version
 
-.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.5.0...master
+.. _Next Release: https://github.com/sprockets/sprockets.mixins.http/compare/2.6.0...master
+.. _2.6.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.5.0...2.6.0
 .. _2.5.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.1...2.5.0
 .. _2.4.1: https://github.com/sprockets/sprockets.mixins.http/compare/2.4.0...2.4.1
 .. _2.4.0: https://github.com/sprockets/sprockets.mixins.http/compare/2.3.3...2.4.0
