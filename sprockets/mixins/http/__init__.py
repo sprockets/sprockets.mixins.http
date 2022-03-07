@@ -156,9 +156,10 @@ class HTTPResponse:
             return None
         links = []
         if 'Link' in self._responses[-1].headers:
-            for l in headers.parse_link(self._responses[-1].headers['Link']):
-                link = {'target': l.target}
-                link.update({k: v for (k, v) in l.parameters})
+            for parsed in headers.parse_link(
+                    self._responses[-1].headers['Link']):
+                link = {'target': parsed.target}
+                link.update({k: v for (k, v) in parsed.parameters})
                 links.append(link)
         return links
 
