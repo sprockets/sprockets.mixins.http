@@ -2,7 +2,7 @@ sprockets.mixins.http
 =====================
 HTTP Client Mixin for Tornado RequestHandlers. Automatically retries on errors, sleep when rate limited, and handles content encoding and decoding using `MsgPack <https://msgpack.org>`_ and JSON.
 
-|Version| |Travis| |CodeCov| |Docs|
+|Version| |Status| |CodeCov| |Docs|
 
 Installation
 ------------
@@ -115,8 +115,9 @@ License
 .. |Version| image:: https://badge.fury.io/py/sprockets.mixins.http.svg?
    :target: https://badge.fury.io/py/sprockets.mixins.http
 
-.. |Travis| image:: https://travis-ci.org/sprockets/sprockets.mixins.http.svg?branch=master
-   :target: https://travis-ci.org/sprockets/sprockets.mixins.http
+.. |Status| image:: https://github.com/sprockets/sprockets.mixins.http/workflows/Testing/badge.svg?
+   :target: https://github.com/sprockets/sprockets.mixins.http/actions?workflow=Testing
+   :alt: Build Status
 
 .. |CodeCov| image:: https://codecov.io/github/sprockets/sprockets.mixins.http/coverage.svg?branch=master
    :target: https://codecov.io/github/sprockets/sprockets.mixins.http?branch=master
