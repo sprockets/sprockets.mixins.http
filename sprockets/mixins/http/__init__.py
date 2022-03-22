@@ -250,6 +250,7 @@ class HTTPClientMixin:
 
     """
 
+    # seconds
     DEFAULT_CONNECT_TIMEOUT = 10
     DEFAULT_REQUEST_TIMEOUT = 60
     DEFAULT_RETRY_TIMEOUT = 3
