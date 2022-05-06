@@ -803,3 +803,18 @@ class MixinTestCase(testing.AsyncHTTPTestCase):
         self.assertEqual(response.headers['Content-Type'],
                          'bar/foo+json')
         self.assertEqual(response.body['body'], body)
+
+    @testing.gen_test
+    def test_post_without_content_type(self):
+        body = {
+            'foo': 'bar',
+        }
+        response = yield self.mixin.http_fetch(
+            self.get_url('/test'),
+            method='POST',
+            body=body,
+            request_headers={},
+        )
+        self.assertEqual(response.code, 200)
+        self.assertEqual(response.body['headers']['Content-Type'],
+                         'application/msgpack')

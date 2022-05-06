@@ -452,7 +452,7 @@ class HTTPClientMixin:
             request_headers = {}
         request_headers.setdefault(
             'Accept', ', '.join([str(ct) for ct in AVAILABLE_CONTENT_TYPES]))
-        if body:
+        if body is not None:
             request_headers.setdefault(
                 'Content-Type',
                 str(content_type) or str(CONTENT_TYPE_MSGPACK))
